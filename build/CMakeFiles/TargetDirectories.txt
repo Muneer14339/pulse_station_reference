@@ -1,5 +1,0 @@
-C:/Users/GM/Documents/StudioProjects/TLC_projects/pulse_station/build/CMakeFiles/PulseStation.dir
-C:/Users/GM/Documents/StudioProjects/TLC_projects/pulse_station/build/CMakeFiles/edit_cache.dir
-C:/Users/GM/Documents/StudioProjects/TLC_projects/pulse_station/build/CMakeFiles/rebuild_cache.dir
-C:/Users/GM/Documents/StudioProjects/TLC_projects/pulse_station/build/CMakeFiles/PulseStation_autogen_timestamp_deps.dir
-C:/Users/GM/Documents/StudioProjects/TLC_projects/pulse_station/build/CMakeFiles/PulseStation_autogen.dir
