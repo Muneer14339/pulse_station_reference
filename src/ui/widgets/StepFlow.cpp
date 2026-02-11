@@ -4,11 +4,13 @@ StepFlow::StepFlow(QWidget* parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 6);
     layout->setSpacing(4);
+    setStyleSheet("background: transparent; border: none;");
   
     m_stepLabel = new QLabel("STEP 0 · READY", this);
-m_stepLabel->setStyleSheet("font-size: 12px; color: rgb(255, 182, 73); letter-spacing: 2px; font-weight: 600;");
+    m_stepLabel->setStyleSheet("font-size: 12px; color: rgb(255, 182, 73); letter-spacing: 2px; font-weight: 600; background: transparent; border: none;");
   
     auto* pillContainer = new QWidget(this);
+    pillContainer->setStyleSheet("background: transparent; border: none;");
     m_pillLayout = new QHBoxLayout(pillContainer);
     m_pillLayout->setContentsMargins(0, 0, 0, 0);
     m_pillLayout->setSpacing(8);

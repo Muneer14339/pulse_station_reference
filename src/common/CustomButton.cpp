@@ -5,6 +5,8 @@
 CustomButton::CustomButton(const QString& mainText, const QString& subText, QWidget* parent)
     : QPushButton(parent), m_selected(false) {
     
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(12, 12, 12, 12);
     layout->setSpacing(2);

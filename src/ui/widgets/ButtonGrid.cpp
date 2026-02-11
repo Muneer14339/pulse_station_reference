@@ -5,7 +5,14 @@ ButtonGrid::ButtonGrid(int columns, QWidget* parent)
     m_layout = new QGridLayout(this);
     m_layout->setSpacing(10);
     m_layout->setContentsMargins(0, 6, 0, 4);
+    
+    // Fixed column stretch - har column equal width
+    for (int i = 0; i < m_columns; ++i) {
+        m_layout->setColumnStretch(i, 1);
+    }
+    
     setLayout(m_layout);
+    setStyleSheet("QWidget { background: transparent; border: none; }");
 }
 
 void ButtonGrid::addButton(const QString& mainText, const QString& subText, const QString& id) {

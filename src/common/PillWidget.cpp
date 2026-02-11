@@ -29,12 +29,12 @@ void PillWidget::setActive(bool active) {
 
 void PillWidget::updateStyle() {
     if (m_active) {
-        setStyleSheet("QWidget { background: rgba(255, 182, 73, 31); border: 1px solid rgb(255, 182, 73); border-radius: 999px; }");
-        m_dot->setStyleSheet("background: rgb(255, 182, 73); border-radius: 3px;");
-        m_label->setStyleSheet("font-size: 11px; color: rgb(255, 224, 166);");
+        setStyleSheet("PillWidget { background: rgba(255, 182, 73, 31); border: 1px solid rgb(255, 182, 73); border-radius: 999px; }");
+        m_dot->setStyleSheet("background: rgb(255, 182, 73); border-radius: 3px; border: none;");
+        m_label->setStyleSheet("font-size: 11px; color: rgb(255, 224, 166); background: transparent; border: none;");
     } else {
-        setStyleSheet("QWidget { background: transparent; border: 1px solid rgba(255, 255, 255, 31); border-radius: 999px; }");
-        m_dot->setStyleSheet("background: rgb(96, 103, 138); border-radius: 3px;");
-        m_label->setStyleSheet("font-size: 11px; color: rgb(179, 185, 214);");
+        setStyleSheet("PillWidget { background: transparent; border: 1px solid rgba(255, 255, 255, 31); border-radius: 999px; }");
+        m_dot->setStyleSheet("background: rgb(96, 103, 138); border-radius: 3px; border: none;");
+        m_label->setStyleSheet("font-size: 11px; color: rgb(179, 185, 214); background: transparent; border: none;");
     }
 }

@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME}
     main.cpp
     src/ui/MainWindow.cpp
     src/ui/widgets/ConsoleWidget.cpp
+    src/ui/widgets/ReviewScreen.cpp
     src/ui/widgets/QRPanel.cpp
     src/ui/widgets/StepFlow.cpp
     src/ui/widgets/ButtonGrid.cpp

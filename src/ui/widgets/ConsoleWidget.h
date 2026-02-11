@@ -7,10 +7,8 @@
 #include <QPushButton>
 #include "core/SessionState.h"
 #include "core/DataModels.h"
-#include "QRPanel.h"
 #include "StepFlow.h"
 #include "ButtonGrid.h"
-#include "SummaryBox.h"
 
 class ConsoleWidget : public QWidget {
     Q_OBJECT
@@ -29,7 +27,7 @@ private:
     void renderDistances();
     void renderTargets();
     void renderDrills();
-    void showSummary();
+    void showNextButton();
     
     SessionState* m_state;
     QMap<QString, Category> m_categories;
@@ -42,7 +40,7 @@ private:
     QWidget* m_distanceBlock;
     QWidget* m_targetBlock;
     QWidget* m_drillBlock;
-    QWidget* m_summaryBlock;
+    QWidget* m_actionBlock;
     
     ButtonGrid* m_categoryGrid;
     ButtonGrid* m_caliberGrid;
@@ -51,7 +49,6 @@ private:
     ButtonGrid* m_targetGrid;
     ButtonGrid* m_drillGrid;
     
-    SummaryBox* m_summaryBox;
     QPushButton* m_resetBtn;
     QPushButton* m_confirmBtn;
     

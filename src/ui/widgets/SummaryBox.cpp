@@ -23,24 +23,25 @@ void SummaryBox::updateSummary(const QString& category, const QString& caliber,
     }
     
     auto addRow = [this](const QString& label, const QString& value, bool highlight = false) {
-        auto* row = new QWidget(this);
-        auto* rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(0, 0, 0, 0);
-        
-        auto* labelWidget = new QLabel(label.toUpper(), row);
-        labelWidget->setStyleSheet("font-size: 11px; color: rgb(157, 164, 197); letter-spacing: 1px;");
-        
-        auto* valueWidget = new QLabel(value, row);
-        QString color = highlight ? "rgb(255, 182, 73)" : "rgb(212, 216, 243)";
-        valueWidget->setStyleSheet(QString("font-size: 13px; color: %1;").arg(color));
-        
-        rowLayout->addWidget(labelWidget);
-        rowLayout->addStretch();
-        rowLayout->addWidget(valueWidget);
-        row->setLayout(rowLayout);
-        
-        m_layout->addWidget(row);
-    };
+    auto* row = new QWidget(this);
+    row->setStyleSheet("background: transparent; border: none;");
+    auto* rowLayout = new QHBoxLayout(row);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    
+    auto* labelWidget = new QLabel(label.toUpper(), row);
+    labelWidget->setStyleSheet("font-size: 11px; color: rgb(157, 164, 197); letter-spacing: 1px; background: transparent; border: none;");
+    
+    auto* valueWidget = new QLabel(value, row);
+    QString color = highlight ? "rgb(255, 182, 73)" : "rgb(212, 216, 243)";
+    valueWidget->setStyleSheet(QString("font-size: 13px; color: %1; background: transparent; border: none;").arg(color));
+    
+    rowLayout->addWidget(labelWidget);
+    rowLayout->addStretch();
+    rowLayout->addWidget(valueWidget);
+    row->setLayout(rowLayout);
+    
+    m_layout->addWidget(row);
+};
     
     addRow("Loadout", QString("%1 / %2").arg(category, caliber));
     addRow("Profile", profile);

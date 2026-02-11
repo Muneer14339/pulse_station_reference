@@ -54,11 +54,13 @@ void ConsoleWidget::setupUI() {
     
     auto addSection = [&](const QString& title, const QString& badgeText, QWidget*& block, ButtonGrid*& grid, QLabel*& badge) {
         block = new QWidget(rightPanel);
+        block->setStyleSheet("background: transparent; border: none;");
         auto* blockLayout = new QVBoxLayout(block);
         blockLayout->setContentsMargins(0, 0, 0, 0);
         blockLayout->setSpacing(4);
         
         auto* titleRow = new QWidget(block);
+        titleRow->setStyleSheet("background: transparent; border: none;");
         auto* titleLayout = new QHBoxLayout(titleRow);
         titleLayout->setContentsMargins(0, 4, 0, 4);
         
@@ -90,6 +92,7 @@ void ConsoleWidget::setupUI() {
     };
     
     auto* categoryBlock = new QWidget(rightPanel);
+    categoryBlock->setStyleSheet("background: transparent; border: none;");
     auto* categoryLayout = new QVBoxLayout(categoryBlock);
     categoryLayout->setContentsMargins(0, 0, 0, 0);
     
@@ -101,6 +104,7 @@ void ConsoleWidget::setupUI() {
     categoryHint->setAlignment(Qt::AlignRight);
     
     auto* categoryTitleRow = new QWidget(categoryBlock);
+    categoryTitleRow->setStyleSheet("background: transparent; border: none;");
     auto* categoryTitleLayout = new QHBoxLayout(categoryTitleRow);
     categoryTitleLayout->setContentsMargins(0, 4, 0, 4);
     categoryTitleLayout->addWidget(categoryTitle);
@@ -121,20 +125,12 @@ void ConsoleWidget::setupUI() {
     addSection("Step 5 · Target", "✓ <span>Distance</span>", m_targetBlock, m_targetGrid, m_badgeDistance);
     addSection("Step 6 · Drill", "✓ <span>Target</span>", m_drillBlock, m_drillGrid, m_badgeTarget);
     
-    m_summaryBlock = new QWidget(rightPanel);
-    auto* summaryLayout = new QVBoxLayout(m_summaryBlock);
-    summaryLayout->setContentsMargins(0, 0, 0, 8);
-    
-    auto* summaryTitle = new QLabel("Session Summary", m_summaryBlock);
-    summaryTitle->setStyleSheet("font-size: 14px; font-weight: 600; color: rgb(230, 233, 255); padding: 4px 0;");
-    
-    m_summaryBox = new SummaryBox(m_summaryBlock);
-    
-    auto* actionRow = new QWidget(m_summaryBlock);
-    auto* actionLayout = new QHBoxLayout(actionRow);
+    m_actionBlock = new QWidget(rightPanel);
+    m_actionBlock->setStyleSheet("background: transparent; border: none;");
+    auto* actionLayout = new QHBoxLayout(m_actionBlock);
     actionLayout->setContentsMargins(0, 16, 0, 0);
     
-    m_resetBtn = new QPushButton("Reset All", actionRow);
+    m_resetBtn = new QPushButton("Reset All", m_actionBlock);
     m_resetBtn->setStyleSheet(
         "QPushButton { background: transparent; border: 1px dashed rgba(255,255,255,64); "
         "border-radius: 12px; color: rgb(179, 185, 214); padding: 12px; min-height: 40px; }"
@@ -142,21 +138,16 @@ void ConsoleWidget::setupUI() {
     );
     m_resetBtn->setCursor(Qt::PointingHandCursor);
     
-    m_confirmBtn = new QPushButton("Confirm & Begin Session", actionRow);
+    m_confirmBtn = new QPushButton("Next: Review Session →", m_actionBlock);
     m_confirmBtn->setStyleSheet(AppTheme::getButtonPrimaryStyle());
     m_confirmBtn->setCursor(Qt::PointingHandCursor);
     
     actionLayout->addStretch();
     actionLayout->addWidget(m_resetBtn);
     actionLayout->addWidget(m_confirmBtn);
-    actionRow->setLayout(actionLayout);
+    m_actionBlock->setLayout(actionLayout);
     
-    summaryLayout->addWidget(summaryTitle);
-    summaryLayout->addWidget(m_summaryBox);
-    summaryLayout->addWidget(actionRow);
-    m_summaryBlock->setLayout(summaryLayout);
-    
-    rightLayout->addWidget(m_summaryBlock);
+    rightLayout->addWidget(m_actionBlock);
     rightLayout->addStretch();
     rightPanel->setLayout(rightLayout);
     
@@ -173,7 +164,7 @@ void ConsoleWidget::renderAll() {
     renderDistances();
     renderTargets();
     renderDrills();
-    showSummary();
+    showNextButton();
 }
 
 void ConsoleWidget::renderCategories() {
@@ -284,49 +275,11 @@ void ConsoleWidget::renderDrills() {
     m_drillGrid->setSelectedId(m_state->drillId());
 }
 
-void ConsoleWidget::showSummary() {
+void ConsoleWidget::showNextButton() {
     if (!m_state->isComplete()) {
-        m_summaryBlock->hide();
-        m_confirmBtn->setEnabled(false);
+        m_actionBlock->hide();
         return;
     }
-    
-    m_summaryBlock->show();
+    m_actionBlock->show();
     m_confirmBtn->setEnabled(true);
-    
-    const Category& cat = m_categories[m_state->categoryId()];
-    const Caliber& cal = cat.calibers[m_state->caliberId()];
-    
-    Profile selectedProfile;
-    for (const Profile& prof : cal.profiles) {
-        if (prof.id == m_state->profileId()) {
-            selectedProfile = prof;
-            break;
-        }
-    }
-    
-    Target selectedTarget;
-    for (const Target& tgt : DataModels::getTargets()) {
-        if (tgt.id == m_state->targetId()) {
-            selectedTarget = tgt;
-            break;
-        }
-    }
-    
-    Drill selectedDrill;
-    for (const Drill& drl : DataModels::getDrills()) {
-        if (drl.id == m_state->drillId()) {
-            selectedDrill = drl;
-            break;
-        }
-    }
-    
-    m_summaryBox->updateSummary(
-        cat.label,
-        cal.label,
-        selectedProfile.label,
-        m_state->distance(),
-        selectedTarget.label,
-        selectedDrill.label
-    );
 }

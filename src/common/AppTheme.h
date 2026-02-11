@@ -3,47 +3,55 @@
 #include "AppColors.h"
 
 namespace AppTheme {
-    inline QString getGlobalStyle() {
-        return QString(R"(
-            QWidget {
-                font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-                color: rgb(245, 245, 255);
-            }
-            QScrollBar:vertical {
-                background: rgba(255, 255, 255, 5);
-                width: 6px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical {
-                background: rgba(255, 255, 255, 38);
-                border-radius: 3px;
-                min-height: 20px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background: rgba(255, 255, 255, 64);
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-            QScrollBar:horizontal {
-                background: rgba(255, 255, 255, 5);
-                height: 6px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:horizontal {
-                background: rgba(255, 255, 255, 38);
-                border-radius: 3px;
-                min-width: 20px;
-            }
-            QScrollBar::handle:horizontal:hover {
-                background: rgba(255, 255, 255, 64);
-            }
-            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-                width: 0px;
-            }
-        )");
-    }
-    
+  
+        inline QString getGlobalStyle() {
+    return QString(R"(
+        QWidget {
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            color: rgb(245, 245, 255);
+            background: transparent;
+            border: none;
+        }
+        QLabel {
+            background: transparent;
+            border: none;
+        }
+        QScrollBar:vertical {
+            background: rgba(255, 255, 255, 5);
+            width: 6px;
+            border-radius: 3px;
+        }
+        QScrollBar::handle:vertical {
+            background: rgba(255, 255, 255, 38);
+            border-radius: 3px;
+            min-height: 20px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: rgba(255, 255, 255, 64);
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0px;
+        }
+        QScrollBar:horizontal {
+            background: rgba(255, 255, 255, 5);
+            height: 6px;
+            border-radius: 3px;
+        }
+        QScrollBar::handle:horizontal {
+            background: rgba(255, 255, 255, 38);
+            border-radius: 3px;
+            min-width: 20px;
+        }
+        QScrollBar::handle:horizontal:hover {
+            background: rgba(255, 255, 255, 64);
+        }
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+            width: 0px;
+        }
+    )");
+}
+
+
     inline QString getConsoleBorder() {
         return QString("border: 1px solid rgba(255, 255, 255, 20); border-radius: 22px;");
     }
@@ -133,4 +141,6 @@ namespace AppTheme {
     inline QString getDividerStyle() {
         return QString("background: rgba(255, 255, 255, 31); height: 1px; border: none;");
     }
+
+
 }
