@@ -30,24 +30,15 @@ CustomButton::CustomButton(const QString& mainText, const QString& subText, QWid
     setMinimumHeight(60);
 }
 
-void CustomButton::setMainText(const QString& text) {
-    m_mainLabel->setText(text);
-}
-
+void CustomButton::setMainText(const QString& text) { m_mainLabel->setText(text); }
 void CustomButton::setSubText(const QString& text) {
     m_subLabel->setText(text);
     m_subLabel->setVisible(!text.isEmpty());
 }
+void CustomButton::setSelected(bool selected) { m_selected = selected; updateStyle(); }
 
-void CustomButton::setSelected(bool selected) {
-    m_selected = selected;
-    updateStyle();
-}
-
-void CustomButton::enterEvent(QEnterEvent* event) {
-    if (!m_selected) {
-        setStyleSheet(AppTheme::getButtonHoverStyle());
-    }
+void CustomButton::enterEvent(QEvent* event) {
+    if (!m_selected) setStyleSheet(AppTheme::getButtonHoverStyle());
     QPushButton::enterEvent(event);
 }
 

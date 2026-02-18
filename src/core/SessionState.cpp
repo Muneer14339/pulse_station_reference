@@ -1,8 +1,7 @@
 #include "SessionState.h"
 
 SessionState::SessionState(QObject* parent)
-    : QObject(parent), m_distance(-1) {
-}
+    : QObject(parent), m_distance(-1), m_bluetoothConnected(false) {}
 
 void SessionState::setCategoryId(const QString& id) {
     if (m_categoryId != id) {
@@ -51,6 +50,14 @@ void SessionState::setDrillId(const QString& id) {
     }
 }
 
+void SessionState::setBluetoothConnected(bool connected) {
+    if (m_bluetoothConnected != connected) {
+        m_bluetoothConnected = connected;
+        emit bluetoothConnectionChanged(connected);
+        emit stateChanged();
+    }
+}
+
 void SessionState::reset() {
     m_categoryId.clear();
     m_caliberId.clear();
@@ -75,12 +82,16 @@ bool SessionState::isComplete() const {
            !m_targetId.isEmpty() && !m_drillId.isEmpty();
 }
 
+bool SessionState::canProceed() const {
+    return m_bluetoothConnected && isComplete();
+}
+
 int SessionState::currentStep() const {
-    if (m_drillId.isEmpty() == false) return 6;
-    if (m_targetId.isEmpty() == false) return 5;
+    if (!m_drillId.isEmpty()) return 6;
+    if (!m_targetId.isEmpty()) return 5;
     if (m_distance != -1) return 4;
-    if (m_profileId.isEmpty() == false) return 3;
-    if (m_caliberId.isEmpty() == false) return 2;
-    if (m_categoryId.isEmpty() == false) return 1;
+    if (!m_profileId.isEmpty()) return 3;
+    if (!m_caliberId.isEmpty()) return 2;
+    if (!m_categoryId.isEmpty()) return 1;
     return 0;
 }

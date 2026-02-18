@@ -1,13 +1,14 @@
 {
-    "cmake.configureOnOpen": true,
+    "cmake.configureOnOpen": false,
     "cmake.buildDirectory": "${workspaceFolder}/build",
-    "cmake.generator": "Ninja",
+    "cmake.generator": "MinGW Makefiles",
     "cmake.configureSettings": {
-        "CMAKE_PREFIX_PATH": "C:/Qt/6.5.0/msvc2019_64"
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.2/mingw_64",
+        "CMAKE_C_COMPILER": "C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
+        "CMAKE_CXX_COMPILER": "C:/Qt/Tools/mingw1310_64/bin/g++.exe"
     },
     "files.associations": {
         "*.h": "cpp",
         "*.cpp": "cpp"
-    },
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    }
 }

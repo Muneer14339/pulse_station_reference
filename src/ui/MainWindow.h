@@ -2,6 +2,7 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include "core/SessionState.h"
+#include "core/BluetoothManager.h"
 #include "widgets/ConsoleWidget.h"
 #include "widgets/ReviewScreen.h"
 
@@ -19,6 +20,7 @@ private:
     void showMainScreen();
     
     SessionState* m_state;
+    BluetoothManager* m_btManager;
     QStackedWidget* m_stack;
     ConsoleWidget* m_consoleWidget;
     ReviewScreen* m_reviewScreen;

@@ -1,49 +1,42 @@
 #include "ConsoleWidget.h"
 #include "common/AppTheme.h"
-#include "common/AppColors.h"
 
-ConsoleWidget::ConsoleWidget(SessionState* state, QWidget* parent)
-    : QWidget(parent), m_state(state) {
+ConsoleWidget::ConsoleWidget(SessionState* state, BluetoothManager* btManager, QWidget* parent)
+    : QWidget(parent), m_state(state), m_btManager(btManager) {
     m_categories = DataModels::getCategories();
     setupUI();
     
-    connect(m_state, &SessionState::stateChanged, this, &ConsoleWidget::renderAll);
-    connect(m_categoryGrid, &ButtonGrid::buttonClicked, [this](const QString& id) {
-        m_state->setCategoryId(id);
-    });
-    connect(m_caliberGrid, &ButtonGrid::buttonClicked, [this](const QString& id) {
-        m_state->setCaliberId(id);
-    });
-    connect(m_profileGrid, &ButtonGrid::buttonClicked, [this](const QString& id) {
-        m_state->setProfileId(id);
-    });
-    connect(m_distanceGrid, &ButtonGrid::buttonClicked, [this](const QString& id) {
-        m_state->setDistance(id.toInt());
-    });
-    connect(m_targetGrid, &ButtonGrid::buttonClicked, [this](const QString& id) {
-        m_state->setTargetId(id);
-    });
-    connect(m_drillGrid, &ButtonGrid::buttonClicked, [this](const QString& id) {
-        m_state->setDrillId(id);
-    });
-    connect(m_resetBtn, &QPushButton::clicked, [this]() {
-        m_state->reset();
-    });
-    connect(m_confirmBtn, &QPushButton::clicked, this, &ConsoleWidget::confirmSession);
+    connect(m_state, &SessionState::stateChanged, this, &ConsoleWidget::updateNextButton);
+    connect(m_categoryGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setCategoryId(id); });
+    connect(m_caliberGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setCaliberId(id); });
+    connect(m_profileGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setProfileId(id); });
+    connect(m_distanceGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setDistance(id.toInt()); });
+    connect(m_targetGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setTargetId(id); });
+    connect(m_drillGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setDrillId(id); });
+    connect(m_resetBtn, &QPushButton::clicked, [this]() { m_state->reset(); });
+    connect(m_nextBtn, &QPushButton::clicked, this, &ConsoleWidget::nextRequested);
     
     renderAll();
 }
 
 void ConsoleWidget::setupUI() {
-    auto* mainLayout = new QVBoxLayout(this);
+    auto* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-
+    
+    m_bluetoothPanel = new BluetoothPanel(m_btManager, this);
+    m_bluetoothPanel->setFixedWidth(280);
+    m_bluetoothPanel->setStyleSheet("background: transparent; border-right: 1px solid rgba(255,255,255,51);");
+    
+    connect(m_bluetoothPanel, &BluetoothPanel::connectionChanged, [this](bool connected) {
+        m_state->setBluetoothConnected(connected);
+    });
+    
     m_rightScroll = new QScrollArea(this);
     m_rightScroll->setWidgetResizable(true);
     m_rightScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_rightScroll->setStyleSheet("QScrollArea { border: none; background: transparent; }");
-
+    
     auto* rightPanel = new QWidget();
     auto* rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setContentsMargins(18, 12, 18, 30);
@@ -138,13 +131,14 @@ void ConsoleWidget::setupUI() {
     );
     m_resetBtn->setCursor(Qt::PointingHandCursor);
     
-    m_confirmBtn = new QPushButton("Next: Review Session →", m_actionBlock);
-    m_confirmBtn->setStyleSheet(AppTheme::getButtonPrimaryStyle());
-    m_confirmBtn->setCursor(Qt::PointingHandCursor);
+    m_nextBtn = new QPushButton("Next: Review Session →", m_actionBlock);
+    m_nextBtn->setStyleSheet(AppTheme::getButtonPrimaryStyle());
+    m_nextBtn->setCursor(Qt::PointingHandCursor);
+    m_nextBtn->setEnabled(false);
     
     actionLayout->addStretch();
     actionLayout->addWidget(m_resetBtn);
-    actionLayout->addWidget(m_confirmBtn);
+    actionLayout->addWidget(m_nextBtn);
     m_actionBlock->setLayout(actionLayout);
     
     rightLayout->addWidget(m_actionBlock);
@@ -152,6 +146,8 @@ void ConsoleWidget::setupUI() {
     rightPanel->setLayout(rightLayout);
     
     m_rightScroll->setWidget(rightPanel);
+    
+    mainLayout->addWidget(m_bluetoothPanel);
     mainLayout->addWidget(m_rightScroll);
     setLayout(mainLayout);
 }
@@ -164,7 +160,7 @@ void ConsoleWidget::renderAll() {
     renderDistances();
     renderTargets();
     renderDrills();
-    showNextButton();
+    updateNextButton();
 }
 
 void ConsoleWidget::renderCategories() {
@@ -176,15 +172,10 @@ void ConsoleWidget::renderCategories() {
 }
 
 void ConsoleWidget::renderCalibers() {
-    if (m_state->categoryId().isEmpty()) {
-        m_caliberBlock->hide();
-        return;
-    }
+    if (m_state->categoryId().isEmpty()) { m_caliberBlock->hide(); return; }
     m_caliberBlock->show();
-    
     const Category& cat = m_categories[m_state->categoryId()];
     m_badgeCategory->setText(QString("✓ <span>%1</span>").arg(cat.label));
-    
     m_caliberGrid->clear();
     for (const Caliber& cal : cat.calibers) {
         m_caliberGrid->addButton(cal.label, "Common for " + cat.label.toLower() + " training", cal.id);
@@ -193,16 +184,11 @@ void ConsoleWidget::renderCalibers() {
 }
 
 void ConsoleWidget::renderProfiles() {
-    if (m_state->caliberId().isEmpty()) {
-        m_profileBlock->hide();
-        return;
-    }
+    if (m_state->caliberId().isEmpty()) { m_profileBlock->hide(); return; }
     m_profileBlock->show();
-    
     const Category& cat = m_categories[m_state->categoryId()];
     const Caliber& cal = cat.calibers[m_state->caliberId()];
     m_badgeCaliber->setText(QString("✓ <span>%1</span>").arg(cal.label));
-    
     m_profileGrid->clear();
     for (const Profile& prof : cal.profiles) {
         m_profileGrid->addButton(prof.label, prof.desc, prof.id);
@@ -211,24 +197,15 @@ void ConsoleWidget::renderProfiles() {
 }
 
 void ConsoleWidget::renderDistances() {
-    if (m_state->profileId().isEmpty()) {
-        m_distanceBlock->hide();
-        return;
-    }
+    if (m_state->profileId().isEmpty()) { m_distanceBlock->hide(); return; }
     m_distanceBlock->show();
-    
     const Category& cat = m_categories[m_state->categoryId()];
     const Caliber& cal = cat.calibers[m_state->caliberId()];
-    
     Profile selectedProfile;
     for (const Profile& prof : cal.profiles) {
-        if (prof.id == m_state->profileId()) {
-            selectedProfile = prof;
-            break;
-        }
+        if (prof.id == m_state->profileId()) { selectedProfile = prof; break; }
     }
     m_badgeProfile->setText(QString("✓ <span>%1</span>").arg(selectedProfile.label));
-    
     m_distanceGrid->clear();
     for (int dist : DataModels::getDistances()) {
         m_distanceGrid->addButton(QString("%1 Yards").arg(dist), "Set Carrier", QString::number(dist));
@@ -237,14 +214,9 @@ void ConsoleWidget::renderDistances() {
 }
 
 void ConsoleWidget::renderTargets() {
-    if (m_state->distance() == -1) {
-        m_targetBlock->hide();
-        return;
-    }
+    if (m_state->distance() == -1) { m_targetBlock->hide(); return; }
     m_targetBlock->show();
-    
     m_badgeDistance->setText(QString("✓ <span>%1 yds</span>").arg(m_state->distance()));
-    
     m_targetGrid->clear();
     for (const Target& tgt : DataModels::getTargets()) {
         m_targetGrid->addButton(tgt.label, tgt.desc, tgt.id);
@@ -253,21 +225,13 @@ void ConsoleWidget::renderTargets() {
 }
 
 void ConsoleWidget::renderDrills() {
-    if (m_state->targetId().isEmpty()) {
-        m_drillBlock->hide();
-        return;
-    }
+    if (m_state->targetId().isEmpty()) { m_drillBlock->hide(); return; }
     m_drillBlock->show();
-    
     Target selectedTarget;
     for (const Target& tgt : DataModels::getTargets()) {
-        if (tgt.id == m_state->targetId()) {
-            selectedTarget = tgt;
-            break;
-        }
+        if (tgt.id == m_state->targetId()) { selectedTarget = tgt; break; }
     }
     m_badgeTarget->setText(QString("✓ <span>%1</span>").arg(selectedTarget.label));
-    
     m_drillGrid->clear();
     for (const Drill& drl : DataModels::getDrills()) {
         m_drillGrid->addButton(drl.label, drl.desc, drl.id);
@@ -275,11 +239,8 @@ void ConsoleWidget::renderDrills() {
     m_drillGrid->setSelectedId(m_state->drillId());
 }
 
-void ConsoleWidget::showNextButton() {
-    if (!m_state->isComplete()) {
-        m_actionBlock->hide();
-        return;
-    }
+void ConsoleWidget::updateNextButton() {
+    if (!m_state->isComplete()) { m_actionBlock->hide(); return; }
     m_actionBlock->show();
-    m_confirmBtn->setEnabled(true);
+    m_nextBtn->setEnabled(m_state->canProceed());
 }

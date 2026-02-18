@@ -13,7 +13,7 @@ public:
     bool isSelected() const { return m_selected; }
     
 protected:
-    void enterEvent(QEnterEvent* event) override;
+    void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
     
 private:

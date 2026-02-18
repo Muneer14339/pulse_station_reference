@@ -7,16 +7,18 @@
 #include <QPushButton>
 #include "core/SessionState.h"
 #include "core/DataModels.h"
+#include "core/BluetoothManager.h"
 #include "StepFlow.h"
 #include "ButtonGrid.h"
+#include "BluetoothPanel.h"
 
 class ConsoleWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit ConsoleWidget(SessionState* state, QWidget* parent = nullptr);
+    explicit ConsoleWidget(SessionState* state, BluetoothManager* btManager, QWidget* parent = nullptr);
     
 signals:
-    void confirmSession();
+    void nextRequested();
     
 private:
     void setupUI();
@@ -27,14 +29,16 @@ private:
     void renderDistances();
     void renderTargets();
     void renderDrills();
-    void showNextButton();
+    void updateNextButton();
     
     SessionState* m_state;
+    BluetoothManager* m_btManager;
     QMap<QString, Category> m_categories;
     
+    BluetoothPanel* m_bluetoothPanel;
     QScrollArea* m_rightScroll;
-    
     StepFlow* m_stepFlow;
+    
     QWidget* m_caliberBlock;
     QWidget* m_profileBlock;
     QWidget* m_distanceBlock;
@@ -50,7 +54,7 @@ private:
     ButtonGrid* m_drillGrid;
     
     QPushButton* m_resetBtn;
-    QPushButton* m_confirmBtn;
+    QPushButton* m_nextBtn;
     
     QLabel* m_badgeCategory;
     QLabel* m_badgeCaliber;
