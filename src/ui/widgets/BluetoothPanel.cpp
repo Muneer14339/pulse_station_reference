@@ -97,8 +97,8 @@ void BluetoothPanel::setupUI() {
     
     layout->addWidget(headerRow);
     layout->addWidget(m_bluetoothBtn);
-    layout->addWidget(m_helpPanel);
     layout->addWidget(m_devicesScroll);
+    layout->addWidget(m_helpPanel);
     setLayout(layout);
     
     connect(m_refreshBtn, &QPushButton::clicked, [this]() {
@@ -107,19 +107,40 @@ void BluetoothPanel::setupUI() {
 }
 
 void BluetoothPanel::onDeviceFound(const BluetoothDevice& device) {
+    // 1. Sirf allowed devices filter karo
+    static const QStringList allowed = {"GMSync", "RA", "SK", "PulseStation"};
+    bool valid = false;
+    for (const QString& prefix : allowed)
+        if (device.name.contains(prefix, Qt::CaseInsensitive)) { valid = true; break; }
+    if (!valid) return;
+
     if (m_deviceWidgets.contains(device.address)) return;
-    
+
     auto* deviceWidget = new QWidget(m_devicesContainer);
     deviceWidget->setStyleSheet(
         "QWidget { background: rgba(13, 19, 40, 204); border: 1px solid rgba(255,255,255,51); border-radius: 10px; }"
     );
-    
+
     auto* deviceLayout = new QHBoxLayout(deviceWidget);
     deviceLayout->setContentsMargins(12, 10, 12, 10);
-    
-    auto* nameLabel = new QLabel(device.name, deviceWidget);
+
+    // 2. Name + Address dono dikhao
+    auto* infoBlock = new QWidget(deviceWidget);
+    infoBlock->setStyleSheet("background: transparent; border: none;");
+    auto* infoLayout = new QVBoxLayout(infoBlock);
+    infoLayout->setContentsMargins(0, 0, 0, 0);
+    infoLayout->setSpacing(2);
+
+    auto* nameLabel = new QLabel(device.name, infoBlock);
     nameLabel->setStyleSheet("font-size: 13px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
-    
+
+    auto* addrLabel = new QLabel(device.address, infoBlock);
+    addrLabel->setStyleSheet("font-size: 10px; color: rgb(113, 120, 164); background: transparent; border: none;");
+
+    infoLayout->addWidget(nameLabel);
+    infoLayout->addWidget(addrLabel);
+    infoBlock->setLayout(infoLayout);
+
     auto* connectBtn = new QPushButton("Connect", deviceWidget);
     connectBtn->setStyleSheet(
         "QPushButton { background: transparent; border: 1px solid rgb(79, 209, 197); "
@@ -127,16 +148,15 @@ void BluetoothPanel::onDeviceFound(const BluetoothDevice& device) {
         "QPushButton:hover { background: rgba(79, 209, 197, 26); }"
     );
     connectBtn->setCursor(Qt::PointingHandCursor);
-    connectBtn->setProperty("address", device.address);
-    
-    deviceLayout->addWidget(nameLabel);
+
+    deviceLayout->addWidget(infoBlock);
     deviceLayout->addStretch();
     deviceLayout->addWidget(connectBtn);
     deviceWidget->setLayout(deviceLayout);
-    
+
     m_devicesLayout->insertWidget(m_devicesLayout->count() - 1, deviceWidget);
     m_deviceWidgets[device.address] = deviceWidget;
-    
+
     connect(connectBtn, &QPushButton::clicked, [this, device]() {
         m_btManager->connectToDevice(device.address);
     });

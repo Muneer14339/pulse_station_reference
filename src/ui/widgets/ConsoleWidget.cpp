@@ -6,7 +6,7 @@ ConsoleWidget::ConsoleWidget(SessionState* state, BluetoothManager* btManager, Q
     m_categories = DataModels::getCategories();
     setupUI();
     
-    connect(m_state, &SessionState::stateChanged, this, &ConsoleWidget::updateNextButton);
+    connect(m_state, &SessionState::stateChanged, this, &ConsoleWidget::renderAll);
     connect(m_categoryGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setCategoryId(id); });
     connect(m_caliberGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setCaliberId(id); });
     connect(m_profileGrid, &ButtonGrid::buttonClicked, [this](const QString& id) { m_state->setProfileId(id); });

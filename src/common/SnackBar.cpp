@@ -57,6 +57,6 @@ void SnackBar::showAnimation() {
     anim->setStartValue(0.0);
     anim->setEndValue(1.0);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
-    
-    show();
+
+    QWidget::show();
 }
