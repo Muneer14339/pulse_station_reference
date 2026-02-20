@@ -8,6 +8,10 @@ BluetoothManager::BluetoothManager(QObject* parent)
 {
     setupAgent();
     m_localDevice = new QBluetoothLocalDevice(this);
+    QDBusConnection::systemBus().connect(
+    "org.bluez", "/org/bluez/hci0",
+    "org.freedesktop.DBus.Properties", "PropertiesChanged",
+    this, SLOT(onBluezPropertiesChanged(QString, QVariantMap, QStringList)));
     connect(m_localDevice, &QBluetoothLocalDevice::hostModeStateChanged, this, [this](QBluetoothLocalDevice::HostMode mode) {
     bool powered = (mode != QBluetoothLocalDevice::HostPoweredOff);
     emit bluetoothPoweredChanged(powered);
@@ -217,4 +221,50 @@ bool BluetoothManager::isBluetoothPowered() const {
 void BluetoothManager::setBluetoothPowered(bool on) {
     if (!m_localDevice) return;
     m_localDevice->powerOn();  // Qt only supports powerOn via API; off requires OS
+}
+
+
+void BluetoothManager::onBluezPropertiesChanged(const QString& interface,
+                                                  const QVariantMap& changed,
+                                                  const QStringList&)
+{
+    if (interface != "org.bluez.Adapter1") return;
+    if (!changed.contains("Powered")) return;
+
+    bool powered = changed.value("Powered").toBool();
+    emit bluetoothPoweredChanged(powered);
+    if (powered) {
+        startScanning();
+    } else {
+        stopScanning();
+        m_devices.clear();
+        m_deviceInfos.clear();
+        emit devicesCleared();
+    }
+}
+
+
+void BluetoothManager::setupDBusListener()
+{
+    QDBusInterface bluez("org.bluez", "/org/bluez",
+                         "org.freedesktop.DBus.Introspectable",
+                         QDBusConnection::systemBus());
+
+    QDBusReply<QString> reply = bluez.call("Introspect");
+    if (!reply.isValid()) return;
+
+    QXmlStreamReader xml(reply.value());
+    while (!xml.atEnd()) {
+        xml.readNext();
+        if (xml.isStartElement() && xml.name() == QLatin1String("node")) {
+            QString name = xml.attributes().value("name").toString();
+            if (name.startsWith("hci")) {
+                QDBusConnection::systemBus().connect(
+                    "org.bluez", "/org/bluez/" + name,
+                    "org.freedesktop.DBus.Properties", "PropertiesChanged",
+                    this, SLOT(onBluezPropertiesChanged(QString, QVariantMap, QStringList))
+                );
+            }
+        }
+    }
 }

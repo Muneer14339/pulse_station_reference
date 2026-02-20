@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets Bluetooth)
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets Bluetooth DBus)
 
 add_executable(${PROJECT_NAME}
     main.cpp
@@ -28,6 +28,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets Qt5::Bluetooth)
+target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets Qt5::Bluetooth Qt5::DBus)
+
 
 set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)

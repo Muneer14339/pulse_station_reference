@@ -7,7 +7,15 @@
 #include <QBluetoothDeviceInfo>
 #include <QLowEnergyController>
 #include <QBluetoothLocalDevice>
+#include <QDBusConnection>
 #include <QProcess>
+
+#include <QDBusInterface>
+#include <QDBusReply>
+#include <QDBusObjectPath>
+#include <QDBusMetaType>
+#include <QXmlStreamReader>
+
 
 struct BluetoothDevice {
     QString name;
@@ -54,10 +62,14 @@ private slots:
     void onControllerConnected();
     void onControllerDisconnected();
     void onControllerError(QLowEnergyController::Error error);
+    void onBluezPropertiesChanged(const QString& interface,
+                               const QVariantMap& changed,
+                               const QStringList&);
 
 private:
     void teardownController();
     void setupAgent(); 
+    void setupDBusListener();
 
     QBluetoothDeviceDiscoveryAgent* m_agent = nullptr;  
     QLowEnergyController*                   m_controller = nullptr;
