@@ -13,35 +13,31 @@ void SnackBar::show(QWidget* parent, const QString& message, Type type, int dura
 }
 
 void SnackBar::setupUI() {
-    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
-    setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_DeleteOnClose);
-    
+    setAttribute(Qt::WA_StyledBackground, true);
+
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(16, 12, 16, 12);
-    
+
     m_label = new QLabel(m_message, this);
-    m_label->setStyleSheet("color: rgb(245, 245, 255); font-size: 13px; background: transparent; border: none;");
+    m_label->setStyleSheet("color: rgb(230, 233, 255); font-size: 13px; background: transparent; border: none;");
     layout->addWidget(m_label);
-    
-    QString bgColor;
-    if (m_type == Success) bgColor = "rgba(46, 204, 113, 242)";
-    else if (m_type == Error) bgColor = "rgba(231, 76, 60, 242)";
-    else bgColor = "rgba(52, 73, 94, 242)";
-    
+
+    QString borderColor = m_type == Success ? "rgba(79, 209, 197, 180)"
+                        : m_type == Error   ? "rgba(255, 100, 100, 180)"
+                        :                     "rgba(255, 255, 255, 36)";
+
     setStyleSheet(QString(
-        "QWidget { background: %1; border: 1px solid rgba(255,255,255,77); border-radius: 10px; }"
-    ).arg(bgColor));
-    
+        "QWidget { background: rgb(9, 13, 30); border: 1px solid %1; border-radius: 12px; }"
+    ).arg(borderColor));
+
     adjustSize();
-    
+
     QWidget* p = parentWidget();
-    if (p) {
-        int x = p->width() - width() - 20;
-        int y = 80;
-        move(p->mapToGlobal(QPoint(x, y)));
-    }
-    
+    if (p) move(p->width() - width() - 20, 20);
+
+    raise();
+
     m_timer = new QTimer(this);
     m_timer->setSingleShot(true);
     connect(m_timer, &QTimer::timeout, this, &QWidget::close);

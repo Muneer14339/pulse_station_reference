@@ -6,6 +6,8 @@
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
 #include <QLowEnergyController>
+#include <QBluetoothLocalDevice>
+#include <QProcess>
 
 struct BluetoothDevice {
     QString name;
@@ -30,6 +32,9 @@ public:
     QString connectedDeviceName() const { return m_connectedDeviceName; }
     QVector<BluetoothDevice> devices() const { return m_devices; }
 
+    bool isBluetoothPowered() const;
+    void setBluetoothPowered(bool on);
+
 signals:
     void scanningStarted();
     void scanningStopped();
@@ -39,6 +44,7 @@ signals:
     void connected(const QString& deviceName);
     void disconnected();
     void error(const QString& message);
+    void bluetoothPoweredChanged(bool powered);
 
 private slots:
     void onDeviceDiscovered(const QBluetoothDeviceInfo& info);
@@ -51,12 +57,15 @@ private slots:
 
 private:
     void teardownController();
+    void setupAgent(); 
 
-    QBluetoothDeviceDiscoveryAgent*         m_agent;
+    QBluetoothDeviceDiscoveryAgent* m_agent = nullptr;  
     QLowEnergyController*                   m_controller = nullptr;
 
     QVector<BluetoothDevice>                m_devices;
     QMap<QString, QBluetoothDeviceInfo>     m_deviceInfos;   // address -> full info
+
+    QBluetoothLocalDevice* m_localDevice = nullptr;
 
     bool    m_isScanning  = false;
     bool    m_isConnected = false;

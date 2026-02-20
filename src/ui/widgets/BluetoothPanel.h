@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QProcess>
 #include "core/BluetoothManager.h"
 
 class BluetoothPanel : public QWidget {
@@ -25,6 +26,7 @@ private:
     void onConnecting();
     void onConnected(const QString& deviceName);
     void onDisconnected();
+    void onBluetoothPoweredChanged(bool powered);
     
     BluetoothManager* m_btManager;
     
@@ -37,4 +39,6 @@ private:
     QScrollArea* m_devicesScroll;
     
     QMap<QString, QWidget*> m_deviceWidgets;
+    QWidget* m_offlinePanel;
+    QWidget* m_headerRow;
 };

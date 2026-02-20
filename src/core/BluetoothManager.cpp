@@ -6,16 +6,14 @@
 BluetoothManager::BluetoothManager(QObject* parent)
     : QObject(parent)
 {
-    m_agent = new QBluetoothDeviceDiscoveryAgent(this);
-    m_agent->setLowEnergyDiscoveryTimeout(5000);
-
-    connect(m_agent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
-            this,    &BluetoothManager::onDeviceDiscovered);
-    connect(m_agent, &QBluetoothDeviceDiscoveryAgent::finished,
-            this,    &BluetoothManager::onScanFinished);
-    connect(m_agent,
-            QOverload<QBluetoothDeviceDiscoveryAgent::Error>::of(&QBluetoothDeviceDiscoveryAgent::error),
-            this, &BluetoothManager::onScanError);
+    setupAgent();
+    m_localDevice = new QBluetoothLocalDevice(this);
+    connect(m_localDevice, &QBluetoothLocalDevice::hostModeStateChanged, this, [this](QBluetoothLocalDevice::HostMode mode) {
+    bool powered = (mode != QBluetoothLocalDevice::HostPoweredOff);
+    emit bluetoothPoweredChanged(powered);
+    if (powered) startScanning();
+    else { stopScanning(); m_devices.clear(); m_deviceInfos.clear(); emit devicesCleared(); }
+});
 }
 
 BluetoothManager::~BluetoothManager()
@@ -46,20 +44,25 @@ void BluetoothManager::stopScanning()
     emit scanningStopped();
 }
 
+
 void BluetoothManager::restartScanning()
 {
-    if (m_isConnected) return;          // never disturb an active connection
+    if (m_isConnected) return;
 
-    // Stop agent regardless of current state
-    m_agent->stop();
     m_isScanning = false;
+    m_agent->stop();
 
-    // Wipe the list so the UI gets a clean slate
+    // Purge every known address from BlueZ cache directly
+    for (const BluetoothDevice& dev : m_devices) {
+        QProcess::execute("bluetoothctl", {"remove", dev.address});
+    }
+
     m_devices.clear();
     m_deviceInfos.clear();
     emit devicesCleared();
 
-    // Fresh scan
+    setupAgent();
+
     m_isScanning = true;
     m_agent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
     emit scanningStarted();
@@ -159,7 +162,7 @@ void BluetoothManager::onControllerDisconnected()
     emit disconnected();
 
     // Auto-resume scan so fresh device list appears
-    QTimer::singleShot(500, this, [this]() { startScanning(); });
+    QTimer::singleShot(500, this, [this]() { restartScanning(); });
 }
 
 void BluetoothManager::onControllerError(QLowEnergyController::Error /*error*/)
@@ -173,7 +176,7 @@ void BluetoothManager::onControllerError(QLowEnergyController::Error /*error*/)
     emit error("Connection failed");
     emit disconnected();
 
-    QTimer::singleShot(500, this, [this]() { startScanning(); });
+    QTimer::singleShot(500, this, [this]() { restartScanning(); });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -184,4 +187,34 @@ void BluetoothManager::teardownController()
     m_controller->disconnect();   // detach all Qt signals
     m_controller->deleteLater();
     m_controller = nullptr;
+}
+
+void BluetoothManager::setupAgent()
+{
+    if (m_agent) {
+        m_agent->stop();
+        m_agent->disconnect();
+        m_agent->deleteLater();
+    }
+
+    m_agent = new QBluetoothDeviceDiscoveryAgent(this);
+    m_agent->setLowEnergyDiscoveryTimeout(5000);
+
+    connect(m_agent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
+            this,    &BluetoothManager::onDeviceDiscovered);
+    connect(m_agent, &QBluetoothDeviceDiscoveryAgent::finished,
+            this,    &BluetoothManager::onScanFinished);
+    connect(m_agent,
+            QOverload<QBluetoothDeviceDiscoveryAgent::Error>::of(&QBluetoothDeviceDiscoveryAgent::error),
+            this, &BluetoothManager::onScanError);
+}
+
+
+bool BluetoothManager::isBluetoothPowered() const {
+    return m_localDevice && m_localDevice->hostMode() != QBluetoothLocalDevice::HostPoweredOff;
+}
+
+void BluetoothManager::setBluetoothPowered(bool on) {
+    if (!m_localDevice) return;
+    m_localDevice->powerOn();  // Qt only supports powerOn via API; off requires OS
 }

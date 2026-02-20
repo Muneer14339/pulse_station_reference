@@ -2,6 +2,7 @@
 #include "common/AppTheme.h"
 #include "common/SnackBar.h"
 
+
 BluetoothPanel::BluetoothPanel(BluetoothManager* btManager, QWidget* parent)
     : QWidget(parent), m_btManager(btManager) {
     setupUI();
@@ -13,8 +14,11 @@ BluetoothPanel::BluetoothPanel(BluetoothManager* btManager, QWidget* parent)
     connect(m_btManager, &BluetoothManager::connecting,      this, &BluetoothPanel::onConnecting);
     connect(m_btManager, &BluetoothManager::connected,       this, &BluetoothPanel::onConnected);
     connect(m_btManager, &BluetoothManager::disconnected,    this, &BluetoothPanel::onDisconnected);
+    connect(m_btManager, &BluetoothManager::bluetoothPoweredChanged, this, &BluetoothPanel::onBluetoothPoweredChanged);
 
-    m_btManager->startScanning();
+    onBluetoothPoweredChanged(m_btManager->isBluetoothPowered());
+    
+    if (m_btManager->isBluetoothPowered()) m_btManager->startScanning();
 }
 
 void BluetoothPanel::setupUI() {
@@ -23,14 +27,14 @@ void BluetoothPanel::setupUI() {
     layout->setSpacing(10);
 
     // ── Header row ────────────────────────────────────────────────────────────
-    auto* headerRow = new QWidget(this);
-    auto* headerLayout = new QHBoxLayout(headerRow);
+    m_headerRow = new QWidget(this);
+    auto* headerLayout = new QHBoxLayout(m_headerRow);;
     headerLayout->setContentsMargins(0, 0, 0, 0);
 
-    m_headerLabel = new QLabel("Bluetooth Connections", headerRow);
+    m_headerLabel = new QLabel("Bluetooth Connections", m_headerRow);
     m_headerLabel->setStyleSheet("font-size: 14px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
 
-    m_refreshBtn = new QPushButton("↻", headerRow);
+    m_refreshBtn = new QPushButton("↻", m_headerRow);
     m_refreshBtn->setStyleSheet(
         "QPushButton { background: transparent; border: 1px solid rgba(79, 209, 197, 128); "
         "border-radius: 6px; color: rgb(79, 209, 197); padding: 4px 8px; font-size: 16px; }"
@@ -43,15 +47,39 @@ void BluetoothPanel::setupUI() {
     headerLayout->addWidget(m_headerLabel);
     headerLayout->addStretch();
     headerLayout->addWidget(m_refreshBtn);
-    headerRow->setLayout(headerLayout);
+    m_headerRow->setLayout(headerLayout);
 
     // ── Bluetooth ON badge ────────────────────────────────────────────────────
-    m_bluetoothBtn = new QPushButton("Bluetooth: ON", this);
-    m_bluetoothBtn->setStyleSheet(
-        "QPushButton { background: rgb(79, 209, 197); border: none; border-radius: 8px; "
-        "color: rgb(10, 15, 25); font-weight: 600; font-size: 13px; padding: 10px; }"
-    );
-    m_bluetoothBtn->setCursor(Qt::PointingHandCursor);
+    // ── Offline panel (shown when BT is off) ─────────────────────────────────
+m_offlinePanel = new QWidget(this);
+m_offlinePanel->setStyleSheet(AppTheme::getPanelStyle());
+auto* offLayout = new QVBoxLayout(m_offlinePanel);
+offLayout->setContentsMargins(16, 16, 16, 16);
+offLayout->setSpacing(10);
+
+auto* offIcon = new QLabel("⚠", m_offlinePanel);
+offIcon->setStyleSheet("font-size: 22px; color: rgb(255,182,73); background: transparent; border: none;");
+offIcon->setAlignment(Qt::AlignCenter);
+
+auto* offTitle = new QLabel("Bluetooth is Off", m_offlinePanel);
+offTitle->setStyleSheet("font-size: 14px; font-weight: 600; color: rgb(230,233,255); background: transparent; border: none;");
+offTitle->setAlignment(Qt::AlignCenter);
+
+auto* offHint = new QLabel("Enable Bluetooth to discover and connect AimSync devices.", m_offlinePanel);
+offHint->setStyleSheet("font-size: 11px; color: rgb(140,147,181); background: transparent; border: none;");
+offHint->setWordWrap(true);
+offHint->setAlignment(Qt::AlignCenter);
+
+m_bluetoothBtn = new QPushButton("Turn On Bluetooth", m_offlinePanel);
+m_bluetoothBtn->setStyleSheet(AppTheme::getButtonPrimaryStyle());
+m_bluetoothBtn->setCursor(Qt::PointingHandCursor);
+
+offLayout->addWidget(offIcon);
+offLayout->addWidget(offTitle);
+offLayout->addWidget(offHint);
+offLayout->addWidget(m_bluetoothBtn);
+m_offlinePanel->setLayout(offLayout);
+m_offlinePanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     // ── Help panel ────────────────────────────────────────────────────────────
     m_helpPanel = new QWidget(this);
@@ -99,16 +127,21 @@ void BluetoothPanel::setupUI() {
     m_devicesContainer->setLayout(m_devicesLayout);
     m_devicesScroll->setWidget(m_devicesContainer);
 
-    layout->addWidget(headerRow);
-    layout->addWidget(m_bluetoothBtn);
-    layout->addWidget(m_devicesScroll);
-    layout->addWidget(m_helpPanel);
+    layout->addWidget(m_headerRow);
+layout->addWidget(m_offlinePanel);
+layout->addWidget(m_devicesScroll);
+layout->addWidget(m_helpPanel);
     setLayout(layout);
 
     // Refresh: force-clear + fresh scan regardless of current state
     connect(m_refreshBtn, &QPushButton::clicked, [this]() {
         m_btManager->restartScanning();
     });
+
+    connect(m_bluetoothBtn, &QPushButton::clicked, [this]() {
+    QProcess::startDetached("rfkill", {"unblock", "bluetooth"});
+});
+    
 }
 
 // ── Slot implementations ──────────────────────────────────────────────────────
@@ -231,4 +264,17 @@ void BluetoothPanel::onDisconnected() {
     SnackBar::show(window(), "Disconnected", SnackBar::Info);
     onDevicesCleared();
     emit connectionChanged(false);
+}
+
+void BluetoothPanel::onBluetoothPoweredChanged(bool powered) {
+    m_headerRow->setVisible(powered);
+    m_offlinePanel->setVisible(!powered);
+    m_refreshBtn->setVisible(powered);
+    m_devicesScroll->setVisible(powered);
+    m_helpPanel->setVisible(powered);
+
+    if (powered)
+        SnackBar::show(window(), "Bluetooth enabled", SnackBar::Success);
+    else
+        SnackBar::show(window(), "Bluetooth is off", SnackBar::Error);
 }
