@@ -14,8 +14,7 @@ SummaryBox::SummaryBox(QWidget* parent) : QWidget(parent) {
 }
 
 void SummaryBox::updateSummary(const QString& category, const QString& caliber,
-                               const QString& profile, int distance,
-                               const QString& target, const QString& drill) {
+                               const QString& profile, int distance, const QString& drill) {
     while (m_layout->count() > 0) {
         QWidget* widget = m_layout->itemAt(0)->widget();
         m_layout->removeWidget(widget);
@@ -46,5 +45,5 @@ void SummaryBox::updateSummary(const QString& category, const QString& caliber,
     addRow("Loadout", QString("%1 / %2").arg(category, caliber));
     addRow("Profile", profile);
     addRow("Distance", QString("%1 yds").arg(distance));
-    addRow("Target / Drill", QString("%1 for %2").arg(target, drill), true);
+    addRow("Drill", drill, true);
 }

@@ -6,20 +6,21 @@
 #include "core/DataModels.h"
 #include "SummaryBox.h"
 
-class ReviewScreen : public QWidget {
+class ReviewScreen : public QWidget
+{
     Q_OBJECT
 public:
-    explicit ReviewScreen(SessionState* state, QWidget* parent = nullptr);
+    explicit ReviewScreen(SessionState *state, QWidget *parent = nullptr);
     void updateReview();
-    
+
 signals:
     void backRequested();
     void confirmRequested();
-    
+
 private:
-    SessionState* m_state;
+    SessionState *m_state;
     QMap<QString, Category> m_categories;
-    SummaryBox* m_summaryBox;
-    QPushButton* m_backBtn;
-    QPushButton* m_confirmBtn;
+    SummaryBox *m_summaryBox;
+    QPushButton *m_backBtn;
+    QPushButton *m_confirmBtn;
 };
