@@ -5,24 +5,35 @@
 #include "core/BluetoothManager.h"
 #include "widgets/ConsoleWidget.h"
 #include "widgets/ReviewScreen.h"
+#include "widgets/TrainingPlaceholder.h"
 
+/**
+ * @brief Application shell — owns the header bar and the 3-screen stack.
+ *
+ * Screen flow:
+ *   ConsoleWidget  →  ReviewScreen  →  TrainingPlaceholder
+ *        ↑                  ↑
+ *    (new session)      (back btn)
+ */
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
-    
+
 protected:
     void paintEvent(QPaintEvent* event) override;
-    
+
 private:
-    void showReviewScreen();
-    void showFinalScreen();
-    void showMainScreen();
-    
-    SessionState* m_state;
-    BluetoothManager* m_btManager;
-    QStackedWidget* m_stack;
-    ConsoleWidget* m_consoleWidget;
-    ReviewScreen* m_reviewScreen;
-    QWidget* m_finalScreen;
+    void buildHeader(QWidget* parent, QLayout* parentLayout);
+
+    void showConsole();
+    void showReview();
+    void showTraining();
+
+    SessionState*         m_state;
+    BluetoothManager*     m_btManager;
+    QStackedWidget*       m_stack;
+    ConsoleWidget*        m_consoleWidget;
+    ReviewScreen*         m_reviewScreen;
+    TrainingPlaceholder*  m_trainingScreen;
 };

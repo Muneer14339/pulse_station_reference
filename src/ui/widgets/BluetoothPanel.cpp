@@ -2,19 +2,29 @@
 #include "common/AppTheme.h"
 #include "common/SnackBar.h"
 
-BluetoothPanel::BluetoothPanel(BluetoothManager *btManager, QWidget *parent)
+// ── Constructor ───────────────────────────────────────────────────────────────
+
+BluetoothPanel::BluetoothPanel(BluetoothManager* btManager, QWidget* parent)
     : QWidget(parent), m_btManager(btManager)
 {
-    setupUI();
+    buildUI();
 
-    connect(m_btManager, &BluetoothManager::deviceFound, this, &BluetoothPanel::onDeviceFound);
-    connect(m_btManager, &BluetoothManager::devicesCleared, this, &BluetoothPanel::onDevicesCleared);
-    connect(m_btManager, &BluetoothManager::scanningStarted, this, &BluetoothPanel::onScanningStarted);
-    connect(m_btManager, &BluetoothManager::scanningStopped, this, &BluetoothPanel::onScanningStopped);
-    connect(m_btManager, &BluetoothManager::connecting, this, &BluetoothPanel::onConnecting);
-    connect(m_btManager, &BluetoothManager::connected, this, &BluetoothPanel::onConnected);
-    connect(m_btManager, &BluetoothManager::disconnected, this, &BluetoothPanel::onDisconnected);
-    connect(m_btManager, &BluetoothManager::bluetoothPoweredChanged, this, &BluetoothPanel::onBluetoothPoweredChanged);
+    connect(m_btManager, &BluetoothManager::deviceFound,
+            this, &BluetoothPanel::onDeviceFound);
+    connect(m_btManager, &BluetoothManager::devicesCleared,
+            this, &BluetoothPanel::onDevicesCleared);
+    connect(m_btManager, &BluetoothManager::scanningStarted,
+            this, &BluetoothPanel::onScanningStarted);
+    connect(m_btManager, &BluetoothManager::scanningStopped,
+            this, &BluetoothPanel::onScanningStopped);
+    connect(m_btManager, &BluetoothManager::connecting,
+            this, &BluetoothPanel::onConnecting);
+    connect(m_btManager, &BluetoothManager::connected,
+            this, &BluetoothPanel::onConnected);
+    connect(m_btManager, &BluetoothManager::disconnected,
+            this, &BluetoothPanel::onDisconnected);
+    connect(m_btManager, &BluetoothManager::bluetoothPoweredChanged,
+            this, &BluetoothPanel::onBluetoothPoweredChanged);
 
     onBluetoothPoweredChanged(m_btManager->isBluetoothPowered());
 
@@ -22,58 +32,54 @@ BluetoothPanel::BluetoothPanel(BluetoothManager *btManager, QWidget *parent)
         m_btManager->startScanning();
 }
 
-void BluetoothPanel::setupUI()
-{
-    auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(12, 12, 12, 16);
-    layout->setSpacing(10);
+// ── UI Construction ───────────────────────────────────────────────────────────
 
-    // ── Header row ────────────────────────────────────────────────────────────
+void BluetoothPanel::buildUI() {
+    auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(14, 14, 14, 18);
+    layout->setSpacing(12);
+
+    // ── Header row ────────────────────────────────────────────────────────
     m_headerRow = new QWidget(this);
-    auto *headerLayout = new QHBoxLayout(m_headerRow);
-    ;
+    auto* headerLayout = new QHBoxLayout(m_headerRow);
     headerLayout->setContentsMargins(0, 0, 0, 0);
 
     m_headerLabel = new QLabel("Bluetooth Connections", m_headerRow);
-    m_headerLabel->setStyleSheet("font-size: 14px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
+    m_headerLabel->setStyleSheet(AppTheme::sectionTitle());
 
     m_refreshBtn = new QPushButton("↻", m_headerRow);
-    m_refreshBtn->setStyleSheet(
-        "QPushButton { background: transparent; border: 1px solid rgba(79, 209, 197, 128); "
-        "border-radius: 6px; color: rgb(79, 209, 197); padding: 4px 8px; font-size: 16px; }"
-        "QPushButton:hover { background: rgba(79, 209, 197, 26); }"
-        "QPushButton:disabled { color: rgba(79, 209, 197, 60); border-color: rgba(79, 209, 197, 40); }");
+    m_refreshBtn->setStyleSheet(AppTheme::refreshButton());
     m_refreshBtn->setCursor(Qt::PointingHandCursor);
-    m_refreshBtn->setFixedSize(32, 32);
+    m_refreshBtn->setFixedSize(36, 36);
 
     headerLayout->addWidget(m_headerLabel);
     headerLayout->addStretch();
     headerLayout->addWidget(m_refreshBtn);
     m_headerRow->setLayout(headerLayout);
 
-    // ── Bluetooth ON badge ────────────────────────────────────────────────────
-    // ── Offline panel (shown when BT is off) ─────────────────────────────────
+    // ── Offline panel ─────────────────────────────────────────────────────
     m_offlinePanel = new QWidget(this);
-    m_offlinePanel->setStyleSheet(AppTheme::getPanelStyle());
-    auto *offLayout = new QVBoxLayout(m_offlinePanel);
-    offLayout->setContentsMargins(16, 16, 16, 16);
-    offLayout->setSpacing(10);
+    m_offlinePanel->setStyleSheet(AppTheme::offlinePanel());
+    auto* offLayout = new QVBoxLayout(m_offlinePanel);
+    offLayout->setContentsMargins(18, 18, 18, 18);
+    offLayout->setSpacing(12);
 
-    auto *offIcon = new QLabel("⚠", m_offlinePanel);
-    offIcon->setStyleSheet("font-size: 22px; color: rgb(255,182,73); background: transparent; border: none;");
+    auto* offIcon = new QLabel("⚠", m_offlinePanel);
+    offIcon->setStyleSheet(AppTheme::warningIcon());
     offIcon->setAlignment(Qt::AlignCenter);
 
-    auto *offTitle = new QLabel("Bluetooth is Off", m_offlinePanel);
-    offTitle->setStyleSheet("font-size: 14px; font-weight: 600; color: rgb(230,233,255); background: transparent; border: none;");
+    auto* offTitle = new QLabel("Bluetooth is Off", m_offlinePanel);
+    offTitle->setStyleSheet(AppTheme::sectionTitle());
     offTitle->setAlignment(Qt::AlignCenter);
 
-    auto *offHint = new QLabel("Enable Bluetooth to discover and connect AimSync devices.", m_offlinePanel);
-    offHint->setStyleSheet("font-size: 11px; color: rgb(140,147,181); background: transparent; border: none;");
+    auto* offHint = new QLabel(
+        "Enable Bluetooth to discover and connect AimSync devices.", m_offlinePanel);
+    offHint->setStyleSheet(AppTheme::labelMuted());
     offHint->setWordWrap(true);
     offHint->setAlignment(Qt::AlignCenter);
 
     m_bluetoothBtn = new QPushButton("Turn On Bluetooth", m_offlinePanel);
-    m_bluetoothBtn->setStyleSheet(AppTheme::getButtonPrimaryStyle());
+    m_bluetoothBtn->setStyleSheet(AppTheme::buttonPrimary());
     m_bluetoothBtn->setCursor(Qt::PointingHandCursor);
 
     offLayout->addWidget(offIcon);
@@ -83,27 +89,24 @@ void BluetoothPanel::setupUI()
     m_offlinePanel->setLayout(offLayout);
     m_offlinePanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    // ── Help panel ────────────────────────────────────────────────────────────
+    // ── Help panel ────────────────────────────────────────────────────────
     m_helpPanel = new QWidget(this);
-    m_helpPanel->setStyleSheet("background: rgba(9, 14, 27, 153); border: 1px solid rgba(255,255,255,51); border-radius: 10px;");
-    auto *helpLayout = new QVBoxLayout(m_helpPanel);
-    helpLayout->setContentsMargins(10, 8, 10, 8);
-    helpLayout->setSpacing(2);
+    m_helpPanel->setStyleSheet(AppTheme::helpPanel());
+    auto* helpLayout = new QVBoxLayout(m_helpPanel);
+    helpLayout->setContentsMargins(12, 10, 12, 10);
+    helpLayout->setSpacing(4);
 
-    auto *helpTitle = new QLabel("If device is not listed", m_helpPanel);
-    helpTitle->setStyleSheet("font-size: 13px; font-weight: 600; color: rgb(199, 204, 240); background: transparent; border: none;");
+    auto* helpTitle = new QLabel("If device is not listed", m_helpPanel);
+    helpTitle->setStyleSheet(AppTheme::helpTitle());
 
-    auto *help1 = new QLabel("• Ensure the AimSync device is on.", m_helpPanel);
-    help1->setStyleSheet("font-size: 12px; color: rgb(165, 172, 201); background: transparent; border: none;");
-
-    auto *help2 = new QLabel("• Restart the AimSync device.", m_helpPanel);
-    help2->setStyleSheet("font-size: 12px; color: rgb(165, 172, 201); background: transparent; border: none;");
-
-    auto *help3 = new QLabel("• If issue persists, contact:", m_helpPanel);
-    help3->setStyleSheet("font-size: 12px; color: rgb(165, 172, 201); background: transparent; border: none;");
-
-    auto *helpEmail = new QLabel("  support@pulsestation.com", m_helpPanel);
-    helpEmail->setStyleSheet("font-size: 12px; color: rgb(79, 209, 197); background: transparent; border: none;");
+    auto* help1 = new QLabel("• Ensure the AimSync device is on.", m_helpPanel);
+    help1->setStyleSheet(AppTheme::helpItem());
+    auto* help2 = new QLabel("• Restart the AimSync device.", m_helpPanel);
+    help2->setStyleSheet(AppTheme::helpItem());
+    auto* help3 = new QLabel("• If issue persists, contact:", m_helpPanel);
+    help3->setStyleSheet(AppTheme::helpItem());
+    auto* helpEmail = new QLabel("  support@pulsestation.com", m_helpPanel);
+    helpEmail->setStyleSheet(AppTheme::helpEmail());
 
     helpLayout->addWidget(helpTitle);
     helpLayout->addWidget(help1);
@@ -112,194 +115,184 @@ void BluetoothPanel::setupUI()
     helpLayout->addWidget(helpEmail);
     m_helpPanel->setLayout(helpLayout);
 
-    // ── Device list ───────────────────────────────────────────────────────────
+    // ── Device list scroll area ───────────────────────────────────────────
     m_devicesScroll = new QScrollArea(this);
     m_devicesScroll->setWidgetResizable(true);
     m_devicesScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_devicesScroll->setStyleSheet("QScrollArea { border: none; background: transparent; }");
+    m_devicesScroll->setStyleSheet(AppTheme::scrollArea());
 
     m_devicesContainer = new QWidget();
     m_devicesLayout = new QVBoxLayout(m_devicesContainer);
     m_devicesLayout->setContentsMargins(0, 0, 0, 0);
-    m_devicesLayout->setSpacing(8);
+    m_devicesLayout->setSpacing(10);
+
+    // Empty state
     m_emptyState = new QWidget(m_devicesContainer);
-    m_emptyState->setStyleSheet("background: transparent; border: none;");
-    auto *emptyLayout = new QVBoxLayout(m_emptyState);
-    emptyLayout->setContentsMargins(0, 20, 0, 20);
+    m_emptyState->setStyleSheet(AppTheme::transparent());
+    auto* emptyLayout = new QVBoxLayout(m_emptyState);
+    emptyLayout->setContentsMargins(0, 24, 0, 24);
     emptyLayout->setAlignment(Qt::AlignCenter);
 
-    auto *emptyIcon = new QLabel("◌", m_emptyState);
-    emptyIcon->setStyleSheet("font-size: 28px; color: rgba(113,120,164,120); background: transparent; border: none;");
+    auto* emptyIcon = new QLabel("◌", m_emptyState);
+    emptyIcon->setStyleSheet(AppTheme::emptyIcon());
     emptyIcon->setAlignment(Qt::AlignCenter);
 
-    auto *emptyText = new QLabel("No devices found", m_emptyState);
-    emptyText->setStyleSheet("font-size: 12px; color: rgb(113,120,164); background: transparent; border: none; margin-top: 6px;");
+    auto* emptyText = new QLabel("No devices found", m_emptyState);
+    emptyText->setStyleSheet(AppTheme::emptyText());
     emptyText->setAlignment(Qt::AlignCenter);
 
     emptyLayout->addWidget(emptyIcon);
     emptyLayout->addWidget(emptyText);
     m_emptyState->setLayout(emptyLayout);
     m_emptyState->hide();
+
+    // Scan loader
+    m_scanLoader = new QWidget(m_devicesContainer);
+    m_scanLoader->setStyleSheet(AppTheme::transparent());
+    auto* scanLayout = new QVBoxLayout(m_scanLoader);
+    scanLayout->setContentsMargins(0, 24, 0, 24);
+    scanLayout->setAlignment(Qt::AlignCenter);
+
+    auto* scanDots = new QLabel("◉ ◎ ◎", m_scanLoader);
+    scanDots->setObjectName("scanDots");
+    scanDots->setStyleSheet(AppTheme::loaderDots());
+    scanDots->setAlignment(Qt::AlignCenter);
+
+    auto* scanText = new QLabel("Scanning for devices…", m_scanLoader);
+    scanText->setStyleSheet(AppTheme::loaderText());
+    scanText->setAlignment(Qt::AlignCenter);
+
+    scanLayout->addWidget(scanDots);
+    scanLayout->addWidget(scanText);
+    m_scanLoader->setLayout(scanLayout);
+    m_scanLoader->hide();
+
+    // Connect loader
+    m_connectLoader = new QWidget(m_devicesContainer);
+    m_connectLoader->setStyleSheet(AppTheme::transparent());
+    auto* connLayout = new QVBoxLayout(m_connectLoader);
+    connLayout->setContentsMargins(18, 18, 18, 18);
+    connLayout->setAlignment(Qt::AlignCenter);
+
+    auto* connDots = new QLabel("◉ ◎ ◎", m_connectLoader);
+    connDots->setObjectName("connDots");
+    connDots->setStyleSheet(AppTheme::loaderDots());
+    connDots->setAlignment(Qt::AlignCenter);
+
+    auto* connText = new QLabel("Connecting…", m_connectLoader);
+    connText->setObjectName("connText");
+    connText->setStyleSheet(AppTheme::loaderText());
+    connText->setAlignment(Qt::AlignCenter);
+
+    connLayout->addWidget(connDots);
+    connLayout->addWidget(connText);
+    m_connectLoader->setLayout(connLayout);
+    m_connectLoader->hide();
+
+    // Assemble device list container
+    m_devicesLayout->addWidget(m_connectLoader);
+    m_devicesLayout->addWidget(m_scanLoader);
+    m_devicesLayout->addWidget(m_emptyState);
     m_devicesLayout->addStretch();
     m_devicesContainer->setLayout(m_devicesLayout);
     m_devicesScroll->setWidget(m_devicesContainer);
 
-    // ── Scan loader ───────────────────────────────────────────────────────────────
-    m_scanLoader = new QWidget(this);
-    m_scanLoader->setStyleSheet("background: transparent; border: none;");
-    auto *scanLoaderLayout = new QVBoxLayout(m_scanLoader);
-    scanLoaderLayout->setContentsMargins(0, 20, 0, 20);
-    scanLoaderLayout->setAlignment(Qt::AlignCenter);
-
-    auto *scanDots = new QLabel("◉ ◎ ◎", m_scanLoader);
-    scanDots->setObjectName("scanDots");
-    scanDots->setStyleSheet("font-size: 18px; color: rgba(79,209,197,160); letter-spacing: 6px; background: transparent; border: none;");
-    scanDots->setAlignment(Qt::AlignCenter);
-
-    auto *scanText = new QLabel("Scanning for devices…", m_scanLoader);
-    scanText->setStyleSheet("font-size: 12px; color: rgb(113,120,164); background: transparent; border: none; margin-top: 6px;");
-    scanText->setAlignment(Qt::AlignCenter);
-
-    scanLoaderLayout->addWidget(scanDots);
-    scanLoaderLayout->addWidget(scanText);
-    m_scanLoader->setLayout(scanLoaderLayout);
-    m_scanLoader->hide();
-
-    // ── Connect loader ────────────────────────────────────────────────────────────
-    m_connectLoader = new QWidget(this);
-    m_connectLoader->setStyleSheet("background: transparent; border: none;");
-    auto *connLoaderLayout = new QVBoxLayout(m_connectLoader);
-    connLoaderLayout->setContentsMargins(16, 16, 16, 16);
-    connLoaderLayout->setAlignment(Qt::AlignCenter);
-
-    auto *connDots = new QLabel("◉ ◎ ◎", m_connectLoader);
-    connDots->setObjectName("connDots");
-    connDots->setStyleSheet("font-size: 18px; color: rgba(79,209,197,200); letter-spacing: 6px; background: transparent; border: none;");
-    connDots->setAlignment(Qt::AlignCenter);
-
-    auto *connText = new QLabel("Connecting…", m_connectLoader);
-    connText->setObjectName("connText");
-    connText->setStyleSheet("font-size: 12px; color: rgb(79,209,197); background: transparent; border: none; margin-top: 6px;");
-    connText->setAlignment(Qt::AlignCenter);
-
-    connLoaderLayout->addWidget(connDots);
-    connLoaderLayout->addWidget(connText);
-    m_connectLoader->setLayout(connLoaderLayout);
-    m_connectLoader->hide();
-
-    // ── Dot animator ──────────────────────────────────────────────────────────────
+    // ── Dot animator ──────────────────────────────────────────────────────
     m_dotTimer = new QTimer(this);
     m_dotTimer->setInterval(400);
-    connect(m_dotTimer, &QTimer::timeout, [this]()
-            {
-    m_dotCount = (m_dotCount + 1) % 3;
-    static const char* frames[] = {"◉ ◎ ◎", "◎ ◉ ◎", "◎ ◎ ◉"};
-    if (auto* w = findChild<QLabel*>("scanDots"))  w->setText(frames[m_dotCount]);
-    if (auto* w = findChild<QLabel*>("connDots"))  w->setText(frames[m_dotCount]); });
+    connect(m_dotTimer, &QTimer::timeout, [this]() {
+        m_dotCount = (m_dotCount + 1) % 3;
+        static const char* frames[] = {"◉ ◎ ◎", "◎ ◉ ◎", "◎ ◎ ◉"};
+        if (auto* w = findChild<QLabel*>("scanDots")) w->setText(frames[m_dotCount]);
+        if (auto* w = findChild<QLabel*>("connDots")) w->setText(frames[m_dotCount]);
+    });
 
+    // ── Connections ───────────────────────────────────────────────────────
+    connect(m_refreshBtn, &QPushButton::clicked,
+            [this]() { m_btManager->restartScanning(); });
+
+    connect(m_bluetoothBtn, &QPushButton::clicked,
+            [this]() { QProcess::startDetached("rfkill", {"unblock", "bluetooth"}); });
+
+    // ── Assemble main layout ──────────────────────────────────────────────
     layout->addWidget(m_headerRow);
     layout->addWidget(m_offlinePanel);
-    m_devicesLayout->insertWidget(0, m_connectLoader);
-    m_devicesLayout->insertWidget(0, m_scanLoader);
-    m_devicesLayout->insertWidget(2, m_emptyState);
     layout->addWidget(m_devicesScroll);
     layout->addWidget(m_helpPanel);
-
-    // Refresh: force-clear + fresh scan regardless of current state
-    connect(m_refreshBtn, &QPushButton::clicked, [this]()
-            { m_btManager->restartScanning(); });
-
-    connect(m_bluetoothBtn, &QPushButton::clicked, [this]()
-            { QProcess::startDetached("rfkill", {"unblock", "bluetooth"}); });
+    setLayout(layout);
 }
 
-// ── Slot implementations ──────────────────────────────────────────────────────
+// ── Slot Implementations ──────────────────────────────────────────────────────
 
-void BluetoothPanel::onDeviceFound(const BluetoothDevice &device)
-{
+void BluetoothPanel::onDeviceFound(const BluetoothDevice& device) {
+    // Only show whitelisted device name prefixes
     static const QStringList allowed = {"GMSync", "RA", "SK", "PulseStation"};
-    bool valid = false;
-    for (const QString &prefix : allowed)
-        if (device.name.contains(prefix, Qt::CaseInsensitive))
-        {
-            valid = true;
-            break;
-        }
-    if (!valid)
-        return;
+    const bool valid = std::any_of(allowed.begin(), allowed.end(),
+        [&device](const QString& prefix) {
+            return device.name.contains(prefix, Qt::CaseInsensitive);
+        });
+    if (!valid || m_deviceWidgets.contains(device.address)) return;
 
-    if (m_deviceWidgets.contains(device.address))
-        return;
+    auto* card = new QWidget(m_devicesContainer);
+    card->setStyleSheet(AppTheme::deviceCard());
 
-    auto *deviceWidget = new QWidget(m_devicesContainer);
-    deviceWidget->setStyleSheet(
-        "QWidget { background: rgba(13, 19, 40, 204); border: 1px solid rgba(255,255,255,51); border-radius: 10px; }");
+    auto* cardLayout = new QHBoxLayout(card);
+    cardLayout->setContentsMargins(14, 12, 14, 12);
 
-    auto *deviceLayout = new QHBoxLayout(deviceWidget);
-    deviceLayout->setContentsMargins(12, 10, 12, 10);
-
-    auto *infoBlock = new QWidget(deviceWidget);
-    infoBlock->setStyleSheet("background: transparent; border: none;");
-    auto *infoLayout = new QVBoxLayout(infoBlock);
+    auto* infoBlock = new QWidget(card);
+    infoBlock->setStyleSheet(AppTheme::transparent());
+    auto* infoLayout = new QVBoxLayout(infoBlock);
     infoLayout->setContentsMargins(0, 0, 0, 0);
-    infoLayout->setSpacing(2);
+    infoLayout->setSpacing(3);
 
-    auto *nameLabel = new QLabel(device.name, infoBlock);
-    nameLabel->setStyleSheet("font-size: 13px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
+    auto* nameLabel = new QLabel(device.name, infoBlock);
+    nameLabel->setStyleSheet(AppTheme::deviceName());
 
-    auto *addrLabel = new QLabel(device.address, infoBlock);
-    addrLabel->setStyleSheet("font-size: 10px; color: rgb(113, 120, 164); background: transparent; border: none;");
+    auto* addrLabel = new QLabel(device.address, infoBlock);
+    addrLabel->setStyleSheet(AppTheme::deviceAddress());
 
     infoLayout->addWidget(nameLabel);
     infoLayout->addWidget(addrLabel);
     infoBlock->setLayout(infoLayout);
 
-    auto *connectBtn = new QPushButton("Connect", deviceWidget);
-    connectBtn->setStyleSheet(
-        "QPushButton { background: transparent; border: 1px solid rgb(79, 209, 197); "
-        "border-radius: 8px; color: rgb(79, 209, 197); padding: 6px 14px; font-size: 12px; font-weight: 600; }"
-        "QPushButton:hover { background: rgba(79, 209, 197, 26); }");
+    auto* connectBtn = new QPushButton("Connect", card);
+    connectBtn->setStyleSheet(AppTheme::connectButton());
     connectBtn->setCursor(Qt::PointingHandCursor);
 
-    deviceLayout->addWidget(infoBlock);
-    deviceLayout->addStretch();
-    deviceLayout->addWidget(connectBtn);
-    deviceWidget->setLayout(deviceLayout);
+    cardLayout->addWidget(infoBlock);
+    cardLayout->addStretch();
+    cardLayout->addWidget(connectBtn);
+    card->setLayout(cardLayout);
 
-    m_devicesLayout->insertWidget(m_devicesLayout->count() - 1, deviceWidget);
-    m_deviceWidgets[device.address] = deviceWidget;
+    // Insert before the stretch at end
+    m_devicesLayout->insertWidget(m_devicesLayout->count() - 1, card);
+    m_deviceWidgets[device.address] = card;
 
-    connect(connectBtn, &QPushButton::clicked, [this, device]()
-            { m_btManager->connectToDevice(device.address); });
+    connect(connectBtn, &QPushButton::clicked,
+            [this, device]() { m_btManager->connectToDevice(device.address); });
 }
 
-void BluetoothPanel::onDevicesCleared()
-{
+void BluetoothPanel::onDevicesCleared() {
     m_emptyState->hide();
-    for (auto *widget : m_deviceWidgets)
-    {
-        m_devicesLayout->removeWidget(widget);
-        widget->deleteLater();
+    for (auto* w : m_deviceWidgets) {
+        m_devicesLayout->removeWidget(w);
+        w->deleteLater();
     }
     m_deviceWidgets.clear();
 }
 
-void BluetoothPanel::onScanningStarted()
-{
+void BluetoothPanel::onScanningStarted() {
     m_refreshBtn->setEnabled(false);
     m_emptyState->hide();
-    if (m_deviceWidgets.isEmpty())
-    {
+    if (m_deviceWidgets.isEmpty()) {
         m_scanLoader->show();
         m_dotTimer->start();
     }
 }
 
-void BluetoothPanel::onScanningStopped()
-{
+void BluetoothPanel::onScanningStopped() {
     m_refreshBtn->setEnabled(true);
-    if (!m_connectLoader->isVisible())
-    {
+    if (!m_connectLoader->isVisible()) {
         m_scanLoader->hide();
         m_dotTimer->stop();
         if (m_deviceWidgets.isEmpty())
@@ -307,65 +300,57 @@ void BluetoothPanel::onScanningStopped()
     }
 }
 
-void BluetoothPanel::onConnecting()
-{
+void BluetoothPanel::onConnecting() {
     SnackBar::show(window(), "Connecting to device…", SnackBar::Info);
     m_scanLoader->hide();
-    for (auto *w : m_deviceWidgets)
-        w->hide();
-    if (auto *t = m_connectLoader->findChild<QLabel *>("connText"))
+    for (auto* w : m_deviceWidgets) w->hide();
+    if (auto* t = m_connectLoader->findChild<QLabel*>("connText"))
         t->setText("Connecting…");
     m_connectLoader->show();
     m_dotTimer->start();
 }
 
-void BluetoothPanel::onConnected(const QString &deviceName)
-{
+void BluetoothPanel::onConnected(const QString& deviceName) {
     m_connectLoader->hide();
     m_dotTimer->stop();
     SnackBar::show(window(), QString("✓ Connected to %1").arg(deviceName), SnackBar::Success);
 
     onDevicesCleared();
 
-    auto *connectedWidget = new QWidget(m_devicesContainer);
-    connectedWidget->setStyleSheet(
-        "QWidget { background: rgba(13, 19, 40, 204); border: 1px solid rgb(79, 209, 197); border-radius: 10px; }");
+    auto* card = new QWidget(m_devicesContainer);
+    card->setStyleSheet(AppTheme::connectedCard());
 
-    auto *layout = new QHBoxLayout(connectedWidget);
-    layout->setContentsMargins(12, 10, 12, 10);
+    auto* cardLayout = new QHBoxLayout(card);
+    cardLayout->setContentsMargins(14, 12, 14, 12);
 
-    auto *nameLabel = new QLabel(deviceName, connectedWidget);
-    nameLabel->setStyleSheet("font-size: 13px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
+    auto* nameLabel = new QLabel(deviceName, card);
+    nameLabel->setStyleSheet(AppTheme::deviceName());
 
-    auto *disconnectBtn = new QPushButton("Disconnect", connectedWidget);
-    disconnectBtn->setStyleSheet(
-        "QPushButton { background: rgb(79, 209, 197); border: none; "
-        "border-radius: 8px; color: rgb(10, 15, 25); padding: 6px 14px; font-size: 12px; font-weight: 600; }"
-        "QPushButton:hover { background: rgb(65, 195, 183); }");
+    auto* disconnectBtn = new QPushButton("Disconnect", card);
+    disconnectBtn->setStyleSheet(AppTheme::disconnectButton());
     disconnectBtn->setCursor(Qt::PointingHandCursor);
 
-    layout->addWidget(nameLabel);
-    layout->addStretch();
-    layout->addWidget(disconnectBtn);
-    connectedWidget->setLayout(layout);
+    cardLayout->addWidget(nameLabel);
+    cardLayout->addStretch();
+    cardLayout->addWidget(disconnectBtn);
+    card->setLayout(cardLayout);
 
-    m_devicesLayout->insertWidget(0, connectedWidget);
-    m_deviceWidgets["__connected__"] = connectedWidget;
+    m_devicesLayout->insertWidget(0, card);
+    m_deviceWidgets["__connected__"] = card;
 
-    connect(disconnectBtn, &QPushButton::clicked, [this]()
-            {
-    onDevicesCleared();
-    if (auto* t = m_connectLoader->findChild<QLabel*>("connText"))
-        t->setText("Disconnecting…");
-    m_connectLoader->show();
-    m_dotTimer->start();
-    m_btManager->disconnectDevice(); });
+    connect(disconnectBtn, &QPushButton::clicked, [this]() {
+        onDevicesCleared();
+        if (auto* t = m_connectLoader->findChild<QLabel*>("connText"))
+            t->setText("Disconnecting…");
+        m_connectLoader->show();
+        m_dotTimer->start();
+        m_btManager->disconnectDevice();
+    });
 
     emit connectionChanged(true);
 }
 
-void BluetoothPanel::onDisconnected()
-{
+void BluetoothPanel::onDisconnected() {
     m_connectLoader->hide();
     m_dotTimer->stop();
     SnackBar::show(window(), "Disconnected", SnackBar::Info);
@@ -373,8 +358,7 @@ void BluetoothPanel::onDisconnected()
     emit connectionChanged(false);
 }
 
-void BluetoothPanel::onBluetoothPoweredChanged(bool powered)
-{
+void BluetoothPanel::onBluetoothPoweredChanged(bool powered) {
     m_headerRow->setVisible(powered);
     m_offlinePanel->setVisible(!powered);
     m_refreshBtn->setVisible(powered);

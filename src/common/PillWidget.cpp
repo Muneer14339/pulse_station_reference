@@ -1,40 +1,38 @@
 #include "PillWidget.h"
-#include "AppColors.h"
+#include "AppTheme.h"
 
 PillWidget::PillWidget(const QString& text, QWidget* parent)
-    : QWidget(parent), m_active(false) {
-    
+    : QWidget(parent)
+{
     auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(10, 5, 10, 5);
-    layout->setSpacing(6);
-    
+    layout->setContentsMargins(10, 5, 12, 5);
+    layout->setSpacing(7);
+
     m_dot = new QWidget(this);
-    m_dot->setFixedSize(7, 7);
-    m_dot->setStyleSheet("background: rgb(96, 103, 138); border-radius: 3px;");
-    
+    m_dot->setFixedSize(8, 8);
+
     m_label = new QLabel(text, this);
-    m_label->setStyleSheet("font-size: 11px; color: rgb(179, 185, 214);");
-    
+
     layout->addWidget(m_dot);
     layout->addWidget(m_label);
-    
     setLayout(layout);
-    updateStyle();
+
+    applyStyle();
 }
 
 void PillWidget::setActive(bool active) {
     m_active = active;
-    updateStyle();
+    applyStyle();
 }
 
-void PillWidget::updateStyle() {
+void PillWidget::applyStyle() {
     if (m_active) {
-        setStyleSheet("PillWidget { background: rgba(255, 182, 73, 31); border: 1px solid rgb(255, 182, 73); border-radius: 999px; }");
-        m_dot->setStyleSheet("background: rgb(255, 182, 73); border-radius: 3px; border: none;");
-        m_label->setStyleSheet("font-size: 11px; color: rgb(255, 224, 166); background: transparent; border: none;");
+        setStyleSheet(AppTheme::pillActive());
+        m_dot->setStyleSheet(AppTheme::pillDotActive());
+        m_label->setStyleSheet(AppTheme::pillLabelActive());
     } else {
-        setStyleSheet("PillWidget { background: transparent; border: 1px solid rgba(255, 255, 255, 31); border-radius: 999px; }");
-        m_dot->setStyleSheet("background: rgb(96, 103, 138); border-radius: 3px; border: none;");
-        m_label->setStyleSheet("font-size: 11px; color: rgb(179, 185, 214); background: transparent; border: none;");
+        setStyleSheet(AppTheme::pillInactive());
+        m_dot->setStyleSheet(AppTheme::pillDotInactive());
+        m_label->setStyleSheet(AppTheme::pillLabelInactive());
     }
 }

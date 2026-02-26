@@ -3,6 +3,10 @@
 #include <QVector>
 #include <QMap>
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Data structures
+// ─────────────────────────────────────────────────────────────────────────────
+
 struct Profile {
     QString id;
     QString label;
@@ -39,11 +43,15 @@ struct RecentSession {
     QString profileId;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Static data provider
+// ─────────────────────────────────────────────────────────────────────────────
+
 class DataModels {
 public:
-    static QMap<QString, Category> getCategories();
-    static QVector<int> getDistances();
-    static QVector<Target> getTargets();
-    static QVector<Drill> getDrills();
-    static QVector<RecentSession> getRecentSessions();
+    static QMap<QString, Category>  getCategories();
+    static QVector<int>             getDistances();
+    static QVector<Target>          getTargets();
+    static QVector<Drill>           getDrills();
+    static QVector<RecentSession>   getRecentSessions();
 };

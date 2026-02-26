@@ -12,51 +12,60 @@
 #include "ButtonGrid.h"
 #include "BluetoothPanel.h"
 
-class ConsoleWidget : public QWidget
-{
+/**
+ * @brief Main session-configuration console (Screen 1).
+ *
+ * Left side: BluetoothPanel.
+ * Right side: scrollable step-by-step selection (category → caliber →
+ *             profile → distance → drill) driven by SessionState.
+ *
+ * Emits nextRequested() when the user clicks "Next: Review Session".
+ */
+class ConsoleWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit ConsoleWidget(SessionState *state, BluetoothManager *btManager, QWidget *parent = nullptr);
+    explicit ConsoleWidget(SessionState*     state,
+                           BluetoothManager* btManager,
+                           QWidget*          parent = nullptr);
 
 signals:
     void nextRequested();
 
 private:
-    void setupUI();
+    void buildUI();
     void renderAll();
     void renderCategories();
     void renderCalibers();
     void renderProfiles();
     void renderDistances();
-    void renderTargets();
     void renderDrills();
     void updateNextButton();
 
-    SessionState *m_state;
-    BluetoothManager *m_btManager;
+    SessionState*     m_state;
+    BluetoothManager* m_btManager;
     QMap<QString, Category> m_categories;
 
-    BluetoothPanel *m_bluetoothPanel;
-    QScrollArea *m_rightScroll;
-    StepFlow *m_stepFlow;
+    BluetoothPanel* m_bluetoothPanel;
+    QScrollArea*    m_rightScroll;
+    StepFlow*       m_stepFlow;
 
-    QWidget *m_caliberBlock;
-    QWidget *m_profileBlock;
-    QWidget *m_distanceBlock;
-    QWidget *m_drillBlock;
-    QWidget *m_actionBlock;
+    QWidget*    m_caliberBlock;
+    QWidget*    m_profileBlock;
+    QWidget*    m_distanceBlock;
+    QWidget*    m_drillBlock;
+    QWidget*    m_actionBlock;
 
-    ButtonGrid *m_categoryGrid;
-    ButtonGrid *m_caliberGrid;
-    ButtonGrid *m_profileGrid;
-    ButtonGrid *m_distanceGrid;
-    ButtonGrid *m_drillGrid;
+    ButtonGrid* m_categoryGrid;
+    ButtonGrid* m_caliberGrid;
+    ButtonGrid* m_profileGrid;
+    ButtonGrid* m_distanceGrid;
+    ButtonGrid* m_drillGrid;
 
-    QPushButton *m_resetBtn;
-    QPushButton *m_nextBtn;
+    QPushButton* m_resetBtn;
+    QPushButton* m_nextBtn;
 
-    QLabel *m_badgeCategory;
-    QLabel *m_badgeCaliber;
-    QLabel *m_badgeProfile;
-    QLabel *m_badgeDistance;
+    QLabel* m_badgeCategory;
+    QLabel* m_badgeCaliber;
+    QLabel* m_badgeProfile;
+    QLabel* m_badgeDistance;
 };

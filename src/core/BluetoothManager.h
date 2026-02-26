@@ -8,21 +8,24 @@
 #include <QLowEnergyController>
 #include <QBluetoothLocalDevice>
 #include <QDBusConnection>
-#include <QProcess>
-
 #include <QDBusInterface>
 #include <QDBusReply>
-#include <QDBusObjectPath>
-#include <QDBusMetaType>
 #include <QXmlStreamReader>
-
+#include <QProcess>
 
 struct BluetoothDevice {
     QString name;
     QString address;
-    int rssi;
+    int     rssi = 0;
 };
 
+/**
+ * @brief Manages BLE scanning and device connections.
+ *
+ * Signals are emitted for all state transitions so UI panels can react
+ * without polling.  After a disconnect the manager automatically restarts
+ * a fresh scan.
+ */
 class BluetoothManager : public QObject {
     Q_OBJECT
 public:
@@ -31,14 +34,14 @@ public:
 
     void startScanning();
     void stopScanning();
-    void restartScanning();          // force-clears list and starts fresh
+    void restartScanning();
     void connectToDevice(const QString& address);
     void disconnectDevice();
 
-    bool isScanning()  const { return m_isScanning;  }
-    bool isConnected() const { return m_isConnected; }
-    QString connectedDeviceName() const { return m_connectedDeviceName; }
-    QVector<BluetoothDevice> devices() const { return m_devices; }
+    bool    isScanning()          const { return m_isScanning;         }
+    bool    isConnected()         const { return m_isConnected;        }
+    QString connectedDeviceName() const { return m_connectedDeviceName;}
+    QVector<BluetoothDevice> devices() const { return m_devices;       }
 
     bool isBluetoothPowered() const;
     void setBluetoothPowered(bool on);
@@ -58,26 +61,24 @@ private slots:
     void onDeviceDiscovered(const QBluetoothDeviceInfo& info);
     void onScanFinished();
     void onScanError(QBluetoothDeviceDiscoveryAgent::Error error);
-
     void onControllerConnected();
     void onControllerDisconnected();
     void onControllerError(QLowEnergyController::Error error);
     void onBluezPropertiesChanged(const QString& interface,
-                               const QVariantMap& changed,
-                               const QStringList&);
+                                  const QVariantMap& changed,
+                                  const QStringList& invalidated);
 
 private:
-    void teardownController();
-    void setupAgent(); 
+    void setupAgent();
     void setupDBusListener();
+    void teardownController();
 
-    QBluetoothDeviceDiscoveryAgent* m_agent = nullptr;  
-    QLowEnergyController*                   m_controller = nullptr;
+    QBluetoothDeviceDiscoveryAgent*     m_agent      = nullptr;
+    QLowEnergyController*               m_controller = nullptr;
+    QBluetoothLocalDevice*              m_localDevice = nullptr;
 
-    QVector<BluetoothDevice>                m_devices;
-    QMap<QString, QBluetoothDeviceInfo>     m_deviceInfos;   // address -> full info
-
-    QBluetoothLocalDevice* m_localDevice = nullptr;
+    QVector<BluetoothDevice>            m_devices;
+    QMap<QString, QBluetoothDeviceInfo> m_deviceInfos;
 
     bool    m_isScanning  = false;
     bool    m_isConnected = false;

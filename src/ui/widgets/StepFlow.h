@@ -6,14 +6,16 @@
 #include <QVector>
 #include "common/PillWidget.h"
 
+/**
+ * @brief Progress indicator showing the current setup step and completed pills.
+ */
 class StepFlow : public QWidget {
     Q_OBJECT
 public:
     explicit StepFlow(QWidget* parent = nullptr);
     void setCurrentStep(int step);
-    
+
 private:
-    QLabel* m_stepLabel;
-    QHBoxLayout* m_pillLayout;
-    QVector<PillWidget*> m_pills;
+    QLabel*               m_stepLabel;
+    QVector<PillWidget*>  m_pills;
 };
