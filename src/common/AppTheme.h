@@ -199,16 +199,22 @@ inline QString buttonSelected() {
 // ─────────────────────────────────────────────────────────────────────────────
 inline QString buttonPrimary() {
     return QStringLiteral(R"(
-        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-            stop:0 rgb(255,182,73), stop:1 rgb(255,139,61));
-        border: 1px solid rgb(255, 182, 73);
-        border-radius: 12px;
-        color: rgb(27, 27, 35);
-        font-weight: 600;
-        font-size: 17px;
-        text-align: center;
-        padding: 14px 24px;
-        min-height: 48px;
+        QPushButton {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 rgb(255,182,73), stop:1 rgb(255,139,61));
+            border: 1px solid rgb(255, 182, 73);
+            border-radius: 12px;
+            color: rgb(27, 27, 35);
+            font-weight: 600;
+            font-size: 17px;
+            padding: 14px 24px;
+            min-height: 48px;
+        }
+        QPushButton:disabled {
+            background: rgba(255, 182, 73, 60);
+            border: 1px solid rgba(255, 182, 73, 40);
+            color: rgba(27, 27, 35, 100);
+        }
     )");
 }
 
@@ -473,4 +479,141 @@ inline QString trainingPlaceholderBody() {
     return QStringLiteral("font-size: 16px; color: rgb(140, 147, 181); background: transparent; border: none;");
 }
 
+
+// ──────────────────────────────────────────────────────────────────────────────
+// AppTheme.h  ─  ADD these methods to the existing class
+// ──────────────────────────────────────────────────────────────────────────────
+
+// Red/danger button  (Stop, Pause)
+static inline QString buttonDanger() {
+    return QStringLiteral(R"(
+        QPushButton {
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1,
+                stop:0 rgb(231,76,60), stop:1 rgb(192,57,43));
+            border: 1px solid rgb(231,76,60);
+            border-radius: 12px;
+            color: rgb(255,255,255);
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 18px;
+            min-height: 40px;
+        }
+        QPushButton:hover  { background: rgb(231,76,60); }
+        QPushButton:pressed{ background: rgb(192,57,43); }
+    )");
+}
+
+// Left-side camera feed area
+static inline QString cameraView() {
+    return QStringLiteral(R"(
+        QLabel {
+            background: rgb(10,10,14);
+            color: rgba(255,255,255,120);
+            font-size: 16px;
+        }
+    )");
+}
+
+// Connected device icon text  (⊛ Wi-Fi  /  ⬡ BLE)
+static inline QString connectedIcon() {
+    return QStringLiteral(R"(
+        QLabel {
+            color: rgb(0,206,201);
+            font-size: 12px;
+            font-weight: 600;
+            background: transparent;
+        }
+    )");
+}
+
+// Instruction guide step heading  "1. Start"
+static inline QString instructionStep() {
+    return QStringLiteral(R"(
+        QLabel {
+            color: rgb(255,255,255);
+            font-size: 13px;
+            font-weight: 700;
+            background: transparent;
+        }
+    )");
+}
+
+// Instruction bullet item
+static inline QString instructionItem() {
+    return QStringLiteral(R"(
+        QLabel {
+            color: rgba(255,255,255,170);
+            font-size: 12px;
+            background: transparent;
+        }
+    )");
+}
+
+// Shot grid header background row
+static inline QString gridHeader() {
+    return QStringLiteral(R"(
+        QWidget {
+            background: rgba(255,255,255,18);
+            border-bottom: 1px solid rgba(255,255,255,25);
+        }
+    )");
+}
+
+// Shot grid header cell text
+static inline QString gridHeaderCell() {
+    return QStringLiteral(R"(
+        QLabel {
+            color: rgba(255,255,255,140);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: transparent;
+        }
+    )");
+}
+
+// Shot grid data row
+static inline QString gridDataRow() {
+    return QStringLiteral(R"(
+        QWidget {
+            background: rgba(255,255,255,8);
+            border-bottom: 1px solid rgba(255,255,255,12);
+        }
+        QWidget:hover { background: rgba(255,255,255,14); }
+    )");
+}
+
+// Shot grid data cell text
+static inline QString gridDataCell() {
+    return QStringLiteral(R"(
+        QLabel {
+            color: rgb(255,255,255);
+            font-size: 13px;
+            background: transparent;
+        }
+    )");
+}
+
+// Total score box
+static inline QString scorePanel() {
+    return QStringLiteral(R"(
+        QWidget {
+            background: rgba(139,90,43,0.45);
+            border-top: 1px solid rgba(255,182,73,50);
+        }
+    )");
+}
+
+// Big score number
+static inline QString scoreValue() {
+    return QStringLiteral(R"(
+        QLabel {
+            color: rgb(255,255,255);
+            font-size: 36px;
+            font-weight: 700;
+            background: transparent;
+        }
+    )");
+}
 } // namespace AppTheme

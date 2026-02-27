@@ -5,7 +5,7 @@
 #include "core/BluetoothManager.h"
 #include "widgets/ConsoleWidget.h"
 #include "widgets/ReviewScreen.h"
-#include "widgets/TrainingPlaceholder.h"
+#include "training/ui/TrainingPlaceholder.h" 
 
 /**
  * @brief Application shell — owns the header bar and the 3-screen stack.

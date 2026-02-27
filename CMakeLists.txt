@@ -26,12 +26,15 @@ add_executable(${PROJECT_NAME}
     src/ui/MainWindow.cpp
     src/ui/widgets/ConsoleWidget.cpp
     src/ui/widgets/ReviewScreen.cpp
-    src/ui/widgets/TrainingPlaceholder.cpp
+    src/training/ui/TrainingPlaceholder.cpp
     src/ui/widgets/BluetoothPanel.cpp
     src/ui/widgets/QRPanel.cpp
     src/ui/widgets/StepFlow.cpp
     src/ui/widgets/ButtonGrid.cpp
     src/ui/widgets/SummaryBox.cpp
+
+    src/common/ScanPanel.cpp
+    src/training/ui/CameraPanel.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
