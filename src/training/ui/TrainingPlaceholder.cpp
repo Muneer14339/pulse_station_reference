@@ -31,7 +31,10 @@ void TrainingPlaceholder::buildUI() {
     m_cameraPanel->setStyleSheet(AppTheme::sidePanel());
 
     connect(m_cameraPanel, &CameraPanel::connectionChanged,
-            m_state, &SessionState::setCameraConnected);
+            this, [this](bool connected, int index) {
+                m_state->setCameraConnected(connected);
+                m_state->setCameraIndex(index);
+            });
 
     // ── Right: scroll content (75%) ───────────────────────────────────────
     auto* scroll = new QScrollArea(this);

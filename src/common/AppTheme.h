@@ -479,7 +479,6 @@ inline QString trainingPlaceholderBody() {
     return QStringLiteral("font-size: 16px; color: rgb(140, 147, 181); background: transparent; border: none;");
 }
 
-
 // ──────────────────────────────────────────────────────────────────────────────
 // AppTheme.h  ─  ADD these methods to the existing class
 // ──────────────────────────────────────────────────────────────────────────────
@@ -514,14 +513,15 @@ static inline QString cameraView() {
     )");
 }
 
-// Connected device icon text  (⊛ Wi-Fi  /  ⬡ BLE)
+// Connected device icon text  (● Wi-Fi  /  ⬡ BLE)
 static inline QString connectedIcon() {
     return QStringLiteral(R"(
         QLabel {
             color: rgb(0,206,201);
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 700;
             background: transparent;
+            padding: 0 4px;
         }
     )");
 }
@@ -616,4 +616,5 @@ static inline QString scoreValue() {
         }
     )");
 }
+
 } // namespace AppTheme

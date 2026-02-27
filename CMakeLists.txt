@@ -35,6 +35,7 @@ add_executable(${PROJECT_NAME}
 
     src/common/ScanPanel.cpp
     src/training/ui/CameraPanel.cpp
+    src/training/ui/TrainingScreen.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)

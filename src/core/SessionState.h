@@ -14,6 +14,7 @@ public:
     QString drillId()              const { return m_drillId;           }
     bool    isBluetoothConnected() const { return m_bluetoothConnected;}
     bool    isCameraConnected()    const { return m_cameraConnected;   }
+    int     cameraIndex()          const { return m_cameraIndex;       }
 
     void setCategoryId(const QString& id);
     void setCaliberId(const QString& id);
@@ -22,6 +23,7 @@ public:
     void setDrillId(const QString& id);
     void setBluetoothConnected(bool connected);
     void setCameraConnected(bool connected);
+    void setCameraIndex(int index)         { m_cameraIndex = index; }
 
     void reset();
     void resetAfter(int stepLevel);
@@ -44,4 +46,5 @@ private:
     QString m_drillId;
     bool    m_bluetoothConnected = false;
     bool    m_cameraConnected    = false;
+    int     m_cameraIndex        = -1;
 };

@@ -4,7 +4,6 @@
 #include <QHBoxLayout>
 #include <QDateTime>
 #include <QStandardPaths>
-#include <opencv2/opencv.hpp>
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Construction
@@ -15,74 +14,72 @@ TrainingScreen::TrainingScreen(SessionState* state, QWidget* parent)
 {
     buildUI();
 
-    // Guard: disconnect mid-session → stop everything
+    // Guard: any disconnect mid-session → stop and go back
     auto onDisconnect = [this](bool ok) { if (!ok) stopAndExit(); };
     connect(m_state, &SessionState::bluetoothConnectionChanged, this, onDisconnect);
     connect(m_state, &SessionState::cameraConnectionChanged,   this, onDisconnect);
 
-    m_frameTimer = new QTimer(this);
-    m_frameTimer->setInterval(33);   // ~30 fps
-    connect(m_frameTimer, &QTimer::timeout, this, &TrainingScreen::pollFrame);
-
-    m_dataTimer = new QTimer(this);
-    m_dataTimer->setInterval(300);
-    connect(m_dataTimer, &QTimer::timeout, this, &TrainingScreen::pollData);
+    m_tickTimer = new QTimer(this);
+    m_tickTimer->setInterval(33);   // ~30 fps
+    connect(m_tickTimer, &QTimer::timeout, this, &TrainingScreen::onTick);
 }
 
 void TrainingScreen::beginSession() {
-    start();
-    mode_streaming();
-    m_frameTimer->start();
+    // Reset internal state for re-entry
+    m_phase       = Framing;
+    m_paused      = false;
+    m_camReady    = false;
+    m_shotCount   = 0;
+    m_currentMode = MODE_STREAMING;
+    m_rightStack->setCurrentIndex(0);
+    m_guideBottom->setCurrentIndex(0);
+    m_step4->hide();
+
+    init_system(m_state->cameraIndex(), 600);
+    m_tickTimer->start();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  UI construction helpers
+//  Shared UI helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Builds a top bar.
- *  @param showDownload  true = download icon (scoring), false = back arrow (guide) */
 static QWidget* makeTopBar(bool showDownload,
+                            QObject* ctx,
                             const std::function<void()>& leftAction,
                             const std::function<void()>& downloadAction = {})
 {
     auto* bar = new QWidget;
     bar->setStyleSheet(AppTheme::transparent());
     auto* l = new QHBoxLayout(bar);
-    l->setContentsMargins(14, 10, 14, 10);
+    l->setContentsMargins(18, 16, 18, 12);
 
-    if (showDownload) {
-        auto* btn = new QPushButton("⬇", bar);
-        btn->setStyleSheet(AppTheme::buttonGhost());
-        btn->setFixedSize(34, 34);
-        btn->setCursor(Qt::PointingHandCursor);
-        btn->setToolTip("Save screenshot");
-        QObject::connect(btn, &QPushButton::clicked, [downloadAction]{ if (downloadAction) downloadAction(); });
-        l->addWidget(btn);
-    } else {
-        auto* btn = new QPushButton("←", bar);
-        btn->setStyleSheet(AppTheme::buttonGhost());
-        btn->setFixedSize(34, 34);
-        btn->setCursor(Qt::PointingHandCursor);
-        QObject::connect(btn, &QPushButton::clicked, [leftAction]{ leftAction(); });
-        l->addWidget(btn);
-    }
-
+    auto* leftBtn = new QPushButton(showDownload ? "⬇" : "←", bar);
+    leftBtn->setStyleSheet(AppTheme::refreshButton());
+    leftBtn->setFixedSize(36, 36);
+    leftBtn->setCursor(Qt::PointingHandCursor);
+    if (showDownload)
+        QObject::connect(leftBtn, &QPushButton::clicked, ctx,
+                         [downloadAction]{ if (downloadAction) downloadAction(); });
+    else
+        QObject::connect(leftBtn, &QPushButton::clicked, ctx,
+                         [leftAction]{ leftAction(); });
+    l->addWidget(leftBtn);
     l->addStretch();
 
-    // Connection indicators
-    for (const auto& text : {"⊛  Wi-Fi", "⬡  BLE"}) {
-        auto* icon = new QLabel(text, bar);
-        icon->setStyleSheet(AppTheme::connectedIcon());
-        l->addWidget(icon);
-        l->addSpacing(6);
-    }
+    auto* wifiLbl = new QLabel("● Wi-Fi", bar);
+    wifiLbl->setStyleSheet(AppTheme::connectedIcon());
+    auto* bleLbl  = new QLabel("⬡  BLE", bar);
+    bleLbl->setStyleSheet(AppTheme::connectedIcon());
+    l->addWidget(wifiLbl);
+    l->addSpacing(14);
+    l->addWidget(bleLbl);
 
     bar->setLayout(l);
     return bar;
 }
 
-/** Adds a labelled step block to a layout. Returns the root widget. */
-static QWidget* makeStep(QWidget* parent, const QString& num, const QString& title,
+static QWidget* makeStep(QWidget* parent,
+                          const QString& num, const QString& title,
                           const QStringList& bullets)
 {
     auto* block = new QWidget(parent);
@@ -90,11 +87,9 @@ static QWidget* makeStep(QWidget* parent, const QString& num, const QString& tit
     auto* vb = new QVBoxLayout(block);
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(4);
-
     auto* heading = new QLabel(num + ". " + title, block);
     heading->setStyleSheet(AppTheme::instructionStep());
     vb->addWidget(heading);
-
     for (const auto& b : bullets) {
         auto* lbl = new QLabel("  " + b, block);
         lbl->setStyleSheet(AppTheme::instructionItem());
@@ -105,31 +100,31 @@ static QWidget* makeStep(QWidget* parent, const QString& num, const QString& tit
     return block;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  UI construction
+// ─────────────────────────────────────────────────────────────────────────────
+
 void TrainingScreen::buildUI() {
     auto* root = new QHBoxLayout(this);
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
 
-    // ── Left: camera feed ─────────────────────────────────────────────────
+    // ── Left: live camera feed ────────────────────────────────────────────
     m_cameraView = new QLabel(this);
     m_cameraView->setAlignment(Qt::AlignCenter);
-    m_cameraView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_cameraView->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     m_cameraView->setStyleSheet(AppTheme::cameraView());
     m_cameraView->setText("Connecting to camera...");
 
-    // ── Right: guide + scoring pages ──────────────────────────────────────
+    // ── Right: guide (0) / scoring (1) ───────────────────────────────────
     m_rightStack = new QStackedWidget(this);
-    m_rightStack->addWidget(buildGuidePanel());   // 0
-    m_rightStack->addWidget(buildScoringPanel()); // 1
+    m_rightStack->addWidget(buildGuidePanel());
+    m_rightStack->addWidget(buildScoringPanel());
 
-    root->addWidget(m_cameraView,    60);
-    root->addWidget(m_rightStack,    40);
+    root->addWidget(m_cameraView,  60);
+    root->addWidget(m_rightStack,  40);
     setLayout(root);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Guide panel (Framing + Calibrating)
-// ─────────────────────────────────────────────────────────────────────────────
 
 QWidget* TrainingScreen::buildGuidePanel() {
     auto* panel = new QWidget(this);
@@ -138,16 +133,15 @@ QWidget* TrainingScreen::buildGuidePanel() {
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(0);
 
-    // Top bar
-    vb->addWidget(makeTopBar(false, [this]{ stopAndExit(); }));
+    vb->addWidget(makeTopBar(false, this, [this]{ stopAndExit(); }));
 
-    // Instructions scroll
     auto* scroll = new QScrollArea(panel);
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setStyleSheet(AppTheme::scrollArea());
+    scroll->setStyleSheet(AppTheme::transparent());
 
     auto* content = new QWidget;
+    content->setStyleSheet(AppTheme::transparent());
     auto* cl = new QVBoxLayout(content);
     cl->setContentsMargins(18, 16, 18, 16);
     cl->setSpacing(16);
@@ -172,31 +166,30 @@ QWidget* TrainingScreen::buildGuidePanel() {
         "• Tap Resume to continue."
     }));
 
-    // Step 4 is hidden until Calibrating phase
     m_step4 = makeStep(content, "4", "Finish", {
         "• Session automatically finishes after all shots."
     });
     m_step4->hide();
     cl->addWidget(m_step4);
     cl->addStretch();
-
     content->setLayout(cl);
     scroll->setWidget(content);
     vb->addWidget(scroll, 1);
 
-    // ── Bottom: 3-state mini-stack ────────────────────────────────────────
+    // ── Bottom 3-state: Loading (0) | FrameTarget (1) | Stop+StartScoring (2)
     m_guideBottom = new QStackedWidget(panel);
+    m_guideBottom->setStyleSheet(AppTheme::transparent());
 
-    // 0 — Loading (camera not ready yet)
-    auto* loadingPage = new QWidget;
-    auto* ll = new QHBoxLayout(loadingPage);
+    // 0 — Loading
+    auto* loadPage = new QWidget;
+    auto* ll = new QHBoxLayout(loadPage);
     ll->setContentsMargins(16, 10, 16, 16);
     ll->addStretch();
-    auto* loadBtn = new QPushButton("Loading...", loadingPage);
+    auto* loadBtn = new QPushButton("Loading...", loadPage);
     loadBtn->setStyleSheet(AppTheme::buttonPrimary());
     loadBtn->setEnabled(false);
     ll->addWidget(loadBtn);
-    loadingPage->setLayout(ll);
+    loadPage->setLayout(ll);
 
     // 1 — Frame Target
     auto* framePage = new QWidget;
@@ -211,36 +204,31 @@ QWidget* TrainingScreen::buildGuidePanel() {
     framePage->setLayout(fl);
 
     // 2 — Stop + Start Scoring
-    auto* twoBtnPage = new QWidget;
-    auto* tl = new QHBoxLayout(twoBtnPage);
+    auto* twoPage = new QWidget;
+    auto* tl = new QHBoxLayout(twoPage);
     tl->setContentsMargins(16, 10, 16, 16);
     tl->addStretch();
-    auto* stopBtn = new QPushButton("Stop", twoBtnPage);
+    auto* stopBtn = new QPushButton("Stop", twoPage);
     stopBtn->setStyleSheet(AppTheme::buttonDanger());
     stopBtn->setCursor(Qt::PointingHandCursor);
     connect(stopBtn, &QPushButton::clicked, this, &TrainingScreen::stopAndExit);
-    auto* startScoringBtn = new QPushButton("Start Scoring", twoBtnPage);
-    startScoringBtn->setStyleSheet(AppTheme::buttonPrimary());
-    startScoringBtn->setCursor(Qt::PointingHandCursor);
-    connect(startScoringBtn, &QPushButton::clicked, this, &TrainingScreen::enterScoring);
+    auto* scoringBtn = new QPushButton("Start Scoring", twoPage);
+    scoringBtn->setStyleSheet(AppTheme::buttonPrimary());
+    scoringBtn->setCursor(Qt::PointingHandCursor);
+    connect(scoringBtn, &QPushButton::clicked, this, &TrainingScreen::enterScoring);
     tl->addWidget(stopBtn);
     tl->addSpacing(8);
-    tl->addWidget(startScoringBtn);
-    twoBtnPage->setLayout(tl);
+    tl->addWidget(scoringBtn);
+    twoPage->setLayout(tl);
 
-    m_guideBottom->addWidget(loadingPage);   // 0
-    m_guideBottom->addWidget(framePage);     // 1
-    m_guideBottom->addWidget(twoBtnPage);    // 2
-    m_guideBottom->setCurrentIndex(0);
+    m_guideBottom->addWidget(loadPage);   // 0
+    m_guideBottom->addWidget(framePage);  // 1
+    m_guideBottom->addWidget(twoPage);    // 2
 
     vb->addWidget(m_guideBottom);
     panel->setLayout(vb);
     return panel;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Scoring panel
-// ─────────────────────────────────────────────────────────────────────────────
 
 QWidget* TrainingScreen::buildScoringPanel() {
     auto* panel = new QWidget(this);
@@ -249,11 +237,12 @@ QWidget* TrainingScreen::buildScoringPanel() {
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(0);
 
-    // Top bar (download screenshot)
-    vb->addWidget(makeTopBar(true, {}, [this] {
+    vb->addWidget(makeTopBar(true, this, {}, [this] {
         QPixmap px = grab();
         QString path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)
-                       + "/session_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
+                       + "/session_"
+                       + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss")
+                       + ".png";
         px.save(path);
         SnackBar::show(window(), "Screenshot saved: " + path, SnackBar::Success);
     }));
@@ -272,12 +261,11 @@ QWidget* TrainingScreen::buildScoringPanel() {
     header->setLayout(hl);
     vb->addWidget(header);
 
-    // Shot rows (scroll)
+    // Shot rows (scrollable)
     auto* scroll = new QScrollArea(panel);
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setStyleSheet(AppTheme::scrollArea());
-
+    scroll->setStyleSheet(AppTheme::transparent());
     auto* shotContainer = new QWidget;
     m_shotsLayout = new QVBoxLayout(shotContainer);
     m_shotsLayout->setContentsMargins(0, 0, 0, 0);
@@ -293,16 +281,18 @@ QWidget* TrainingScreen::buildScoringPanel() {
     auto* sl = new QVBoxLayout(scoreBox);
     sl->setContentsMargins(20, 14, 20, 14);
     sl->setSpacing(2);
-    auto* scoreLbl = new QLabel("TOTAL SCORE", scoreBox);
-    scoreLbl->setStyleSheet(AppTheme::labelMuted());
+    auto* scoreTitleLbl = new QLabel("TOTAL SCORE", scoreBox);
+    scoreTitleLbl->setStyleSheet(AppTheme::labelMuted());
+    sl->addWidget(scoreTitleLbl);
+
     m_totalScore = new QLabel("0", scoreBox);
     m_totalScore->setStyleSheet(AppTheme::scoreValue());
-    sl->addWidget(scoreLbl);
+
     sl->addWidget(m_totalScore);
     scoreBox->setLayout(sl);
     vb->addWidget(scoreBox);
 
-    // Bottom: Pause | End Session
+    // Pause + End Session
     auto* bottomBar = new QWidget(panel);
     bottomBar->setStyleSheet(AppTheme::transparent());
     auto* bl = new QHBoxLayout(bottomBar);
@@ -313,15 +303,13 @@ QWidget* TrainingScreen::buildScoringPanel() {
     m_pauseBtn->setCursor(Qt::PointingHandCursor);
     connect(m_pauseBtn, &QPushButton::clicked, this, [this]() {
         if (m_paused) {
-            resume();
+            resume_system();
             m_paused = false;
             m_pauseBtn->setText("⏸  Pause");
-            m_dataTimer->start();
         } else {
-            pause();
+            pause_system();
             m_paused = true;
             m_pauseBtn->setText("▶  Resume");
-            m_dataTimer->stop();
         }
     });
 
@@ -345,63 +333,62 @@ QWidget* TrainingScreen::buildScoringPanel() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 void TrainingScreen::enterCalibrating() {
-    mode_calibration();
-    m_phase = Calibrating;
+    m_currentMode = MODE_CALIBRATION;
+    m_phase       = Calibrating;
     m_step4->show();
-    m_guideBottom->setCurrentIndex(2);  // show Stop + Start Scoring
+    m_guideBottom->setCurrentIndex(2);
 }
 
 void TrainingScreen::enterScoring() {
-    if (!confirm()) {
+    if (!confirm_calibration()) {
         SnackBar::show(window(),
             "Calibration not confirmed. Adjust framing and try again.",
-            SnackBar::Warning);
+            SnackBar::Error);
         return;
     }
-    m_phase = Scoring;
+    m_currentMode = MODE_SCORING;
+    m_phase       = Scoring;
     m_rightStack->setCurrentIndex(1);
-    m_dataTimer->start();
 }
 
 void TrainingScreen::stopAndExit() {
-    m_frameTimer->stop();
-    m_dataTimer->stop();
-    stop();
+    m_tickTimer->stop();
+    cleanup_system();
     emit sessionEnded();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Timers
+//  Tick — processes one frame, updates feed and shot data
 // ─────────────────────────────────────────────────────────────────────────────
 
-void TrainingScreen::pollFrame() {
-    // NOTE: adjust get_frame() to match the actual dart_system.h function name
-    cv::Mat frame = get_frame();
-    if (frame.empty()) return;
+void TrainingScreen::onTick() {
+    if (m_paused) return;
 
-    QImage img(frame.data, frame.cols, frame.rows,
-               (int)frame.step, QImage::Format_BGR888);
-    m_cameraView->setPixmap(
-        QPixmap::fromImage(img).scaled(m_cameraView->size(),
-                                       Qt::KeepAspectRatio,
-                                       Qt::SmoothTransformation));
+    FrameResult result = process_frame(m_currentMode);
 
-    if (!m_camReady) {
-        m_camReady = true;
-        if (m_phase == Framing)
-            m_guideBottom->setCurrentIndex(1);  // Loading → Frame Target
+    // Update camera view
+    if (!result.frame.empty()) {
+        QImage img(result.frame.data,
+                   result.frame.cols, result.frame.rows,
+                   static_cast<int>(result.frame.step),
+                   QImage::Format_BGR888);
+        m_cameraView->setPixmap(
+            QPixmap::fromImage(img).scaled(m_cameraView->size(),
+                                           Qt::KeepAspectRatio,
+                                           Qt::SmoothTransformation));
+
+        if (!m_camReady && m_phase == Framing) {
+            m_camReady = true;
+            m_guideBottom->setCurrentIndex(1); // Loading → Frame Target
+        }
     }
-}
 
-void TrainingScreen::pollData() {
-    // NOTE: adjust get_shot_count() / get_shot_score() / get_total_score()
-    // to match the actual dart_system.h API.
-    int newCount = get_shot_count();
-    for (int i = m_shotCount; i < newCount; ++i) {
+    // New shot in scoring phase
+    if (m_phase == Scoring && result.has_new_shot) {
         ++m_shotCount;
-        addShotRow(m_shotCount, get_shot_score(m_shotCount));
+        addShotRow(result.shot.shot_number, result.shot.score);
+        m_totalScore->setText(QString::number(result.shot.total_score));
     }
-    m_totalScore->setText(QString::number(get_total_score()));
 }
 
 void TrainingScreen::addShotRow(int num, int score) {
@@ -409,20 +396,13 @@ void TrainingScreen::addShotRow(int num, int score) {
     row->setStyleSheet(AppTheme::gridDataRow());
     auto* rl = new QHBoxLayout(row);
     rl->setContentsMargins(16, 10, 16, 10);
-
-    auto makeCell = [&](const QString& text) {
+    for (const auto& text : {QString::number(num), QString::number(score),
+                              QStringLiteral("--"), QStringLiteral("●")}) {
         auto* lbl = new QLabel(text, row);
         lbl->setStyleSheet(AppTheme::gridDataCell());
         lbl->setAlignment(Qt::AlignCenter);
         rl->addWidget(lbl, 1);
-    };
-
-    makeCell(QString::number(num));
-    makeCell(QString::number(score));
-    makeCell("--");   // split time: not yet available
-    makeCell("●");    // direction: not yet available
+    }
     row->setLayout(rl);
-
-    // Insert before the trailing stretch
     m_shotsLayout->insertWidget(m_shotsLayout->count() - 1, row);
 }

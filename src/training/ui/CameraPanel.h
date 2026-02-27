@@ -20,7 +20,7 @@ public:
     bool isConnected()         const { return m_connected;     }
 
 signals:
-    void connectionChanged(bool connected);
+    void connectionChanged(bool connected, int cameraIndex);
 
 protected:
     void showEvent(QShowEvent* event) override;

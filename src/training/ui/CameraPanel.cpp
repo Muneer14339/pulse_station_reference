@@ -56,7 +56,7 @@ void CameraPanel::onConnectClicked(const QString& id) {
 
         m_scanPanel->showConnected(name);
         SnackBar::show(window(), QString("✓ Camera connected: %1").arg(name), SnackBar::Success);
-        emit connectionChanged(true);
+        emit connectionChanged(true, m_selectedIndex);
     });
 }
 
@@ -67,7 +67,7 @@ void CameraPanel::onDisconnectClicked() {
         m_selectedIndex = -1;
         m_scanPanel->showDisconnected();
         SnackBar::show(window(), "Camera disconnected", SnackBar::Info);
-        emit connectionChanged(false);
+        emit connectionChanged(false, -1);
         scan();
     });
 }

@@ -12,26 +12,25 @@
 /**
  * @brief Active training screen.
  *
- * Layout: camera feed (left 60%) | control panel (right 40%)
+ * Layout  :  camera feed (left 60%) | control panel (right 40%)
  *
- * Right panel cycles through 3 phases:
- *   Framing   → camera connecting, shows Loading button
- *   Calibrating → mode_calibration() called, shows Stop + Start Scoring
- *   Scoring   → confirm() succeeded, shows shot grid + score
+ * Right panel phases:
+ *   Framing     → Loading button until first frame arrives → Frame Target
+ *   Calibrating → mode_calibration, shows Stop + Start Scoring
+ *   Scoring     → confirm_calibration succeeded, shows shot grid
  *
- * Any BLE/camera disconnect during a session → stop() + sessionEnded().
+ * BLE or camera disconnect at any time → stopAndExit().
  */
 class TrainingScreen : public QWidget {
     Q_OBJECT
 public:
     explicit TrainingScreen(SessionState* state, QWidget* parent = nullptr);
 
-    /** Called by MainWindow after navigating here.
-     *  Calls start() → mode_streaming(), starts frame polling. */
+    /** Navigate here first, then call this to init engine + start timer. */
     void beginSession();
 
 signals:
-    void sessionEnded();   ///< Navigate back to TrainingPlaceholder
+    void sessionEnded();
 
 private:
     enum Phase { Framing, Calibrating, Scoring };
@@ -43,31 +42,26 @@ private:
     void enterCalibrating();
     void enterScoring();
     void stopAndExit();
-    void pollFrame();
-    void pollData();
+    void onTick();
     void addShotRow(int num, int score);
 
     SessionState*   m_state;
 
-    // Left — camera feed
+    // Left
     QLabel*         m_cameraView;
 
-    // Right — phase switcher
+    // Right
     QStackedWidget* m_rightStack;      // 0=guide, 1=scoring
-
-    // Guide panel internals
-    QStackedWidget* m_guideBottom;     // 0=loading 1=frameTarget 2=stop+startScoring
-    QWidget*        m_step4;           // "4. Finish" block — hidden until Calibrating
-
-    // Scoring panel internals
+    QStackedWidget* m_guideBottom;     // 0=loading, 1=frameTarget, 2=stop+startScoring
+    QWidget*        m_step4;
     QVBoxLayout*    m_shotsLayout;
     QLabel*         m_totalScore;
     QPushButton*    m_pauseBtn;
 
-    QTimer*         m_frameTimer;
-    QTimer*         m_dataTimer;
-    Phase           m_phase    = Framing;
-    bool            m_paused   = false;
-    bool            m_camReady = false;
-    int             m_shotCount= 0;
+    QTimer*         m_tickTimer;
+    Phase           m_phase       = Framing;
+    int             m_currentMode = MODE_STREAMING;
+    bool            m_paused      = false;
+    bool            m_camReady    = false;
+    int             m_shotCount   = 0;
 };

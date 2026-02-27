@@ -33,12 +33,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // ── Screen stack ──────────────────────────────────────────────────────
     m_stack = new QStackedWidget(consoleContainer);
 
-    m_consoleWidget  = new ConsoleWidget(m_state, m_btManager, m_stack);
-    m_reviewScreen   = new ReviewScreen(m_state, m_stack);
-    m_trainingScreen = new TrainingPlaceholder(m_state, m_stack);
+    m_consoleWidget      = new ConsoleWidget(m_state, m_btManager, m_stack);
+    m_reviewScreen       = new ReviewScreen(m_state, m_stack);
+    m_trainingPlaceholder= new TrainingPlaceholder(m_state, m_stack);
+    m_trainingScreen     = new TrainingScreen(m_state, m_stack);
 
     m_stack->addWidget(m_consoleWidget);
     m_stack->addWidget(m_reviewScreen);
+    m_stack->addWidget(m_trainingPlaceholder);
     m_stack->addWidget(m_trainingScreen);
 
     containerLayout->addWidget(m_stack);
@@ -48,16 +50,25 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     centralWidget->setLayout(rootLayout);
     setCentralWidget(centralWidget);
 
-    // ── Navigation connections ────────────────────────────────────────────
-    connect(m_consoleWidget,  &ConsoleWidget::nextRequested,
+    // ── Navigation ────────────────────────────────────────────────────────
+    connect(m_consoleWidget,       &ConsoleWidget::nextRequested,
             this, &MainWindow::showReview);
-    connect(m_reviewScreen,   &ReviewScreen::backRequested,
+
+    connect(m_reviewScreen,        &ReviewScreen::backRequested,
             this, &MainWindow::showConsole);
-    connect(m_reviewScreen,   &ReviewScreen::confirmRequested,
+    connect(m_reviewScreen,        &ReviewScreen::confirmRequested,
             this, &MainWindow::showTraining);
-    connect(m_trainingScreen, &TrainingPlaceholder::newSessionRequested,
+
+    connect(m_trainingPlaceholder, &TrainingPlaceholder::newSessionRequested,
             this, &MainWindow::showConsole);
+    connect(m_trainingPlaceholder, &TrainingPlaceholder::sessionStarted,
+            this, &MainWindow::showActiveSession);
+
+    connect(m_trainingScreen,      &TrainingScreen::sessionEnded,
+            this, &MainWindow::showTraining);   // back to placeholder
 }
+
+// ── Header ────────────────────────────────────────────────────────────────────
 
 void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
     auto* header = new QWidget(parent);
@@ -66,14 +77,13 @@ void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
     auto* headerLayout = new QHBoxLayout(header);
     headerLayout->setContentsMargins(26, 16, 26, 12);
 
-    // Left: app title + subtitle
-    auto* titleBlock = new QWidget(header);
+    auto* titleBlock  = new QWidget(header);
     titleBlock->setStyleSheet(AppTheme::transparent());
     auto* titleLayout = new QVBoxLayout(titleBlock);
     titleLayout->setContentsMargins(0, 0, 0, 0);
     titleLayout->setSpacing(4);
 
-    auto* appTitle    = new QLabel("PULSESTATION · LANE CONSOLE", titleBlock);
+    auto* appTitle = new QLabel("PULSESTATION · LANE CONSOLE", titleBlock);
     appTitle->setStyleSheet(AppTheme::headerAppTitle());
 
     auto* appSubtitle = new QLabel(
@@ -84,8 +94,7 @@ void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
     titleLayout->addWidget(appSubtitle);
     titleBlock->setLayout(titleLayout);
 
-    // Right: lane info
-    auto* rightInfo = new QWidget(header);
+    auto* rightInfo   = new QWidget(header);
     rightInfo->setStyleSheet(AppTheme::transparent());
     auto* rightLayout = new QVBoxLayout(rightInfo);
     rightLayout->setContentsMargins(0, 0, 0, 0);
@@ -129,17 +138,22 @@ void MainWindow::paintEvent(QPaintEvent* event) {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 
+void MainWindow::showConsole() {
+    m_state->reset();
+    m_stack->setCurrentWidget(m_consoleWidget);
+}
+
 void MainWindow::showReview() {
     m_reviewScreen->updateReview();
     m_stack->setCurrentWidget(m_reviewScreen);
 }
 
 void MainWindow::showTraining() {
-    m_trainingScreen->refresh();
-    m_stack->setCurrentWidget(m_trainingScreen);
+    m_trainingPlaceholder->refresh();
+    m_stack->setCurrentWidget(m_trainingPlaceholder);
 }
 
-void MainWindow::showConsole() {
-    m_state->reset();
-    m_stack->setCurrentWidget(m_consoleWidget);
+void MainWindow::showActiveSession() {
+    m_stack->setCurrentWidget(m_trainingScreen);
+    m_trainingScreen->beginSession();
 }
