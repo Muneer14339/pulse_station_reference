@@ -3,6 +3,7 @@
 #include <QPushButton>
 #include "core/SessionState.h"
 #include "SummaryBox.h"
+#include "training/ui/TrainingWidget.h"
 
 /**
  * @brief Placeholder for the upcoming Training Session screen (Screen 3).
@@ -35,4 +36,5 @@ private:
     SummaryBox*   m_summaryBox;
     QPushButton*  m_newSessionBtn;
     QWidget*      m_cameraPlaceholder; // TODO: replace with real camera widget
+    TrainingWidget* m_trainingWidget = nullptr;
 };

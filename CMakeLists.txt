@@ -43,3 +43,22 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
+
+find_package(OpenCV REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+file(GLOB TRAINING_SOURCES "src/training/engine/*.cpp")
+list(REMOVE_ITEM TRAINING_SOURCES "${CMAKE_SOURCE_DIR}/src/training/engine/main.cpp")
+
+target_sources(${PROJECT_NAME} PRIVATE
+    src/training/ui/TrainingWidget.cpp
+    ${TRAINING_SOURCES}
+)
+
+target_link_libraries(${PROJECT_NAME}
+    Qt5::Core Qt5::Widgets Qt5::Bluetooth Qt5::DBus
+    ${OpenCV_LIBS}
+    Eigen3::Eigen
+)

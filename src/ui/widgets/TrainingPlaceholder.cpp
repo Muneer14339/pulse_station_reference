@@ -136,6 +136,24 @@ void TrainingPlaceholder::buildUI() {
     mainLayout->addWidget(scroll);
     setLayout(mainLayout);
 
-    connect(m_newSessionBtn, &QPushButton::clicked,
-            this, &TrainingPlaceholder::newSessionRequested);
+    connect(m_newSessionBtn, &QPushButton::clicked, this, [this]{
+    if (!m_trainingWidget) {
+        m_trainingWidget = new TrainingWidget(this);
+        auto* parent = m_cameraPlaceholder->parentWidget();
+        auto* parentLayout = qobject_cast<QVBoxLayout*>(parent->layout());
+        int idx = parentLayout->indexOf(m_cameraPlaceholder);
+        parentLayout->removeWidget(m_cameraPlaceholder);
+        m_cameraPlaceholder->hide();
+        parentLayout->insertWidget(idx, m_trainingWidget);
+        connect(m_trainingWidget, &TrainingWidget::sessionEnded,
+                this, &TrainingPlaceholder::newSessionRequested);
+    }
+    m_trainingWidget->startSession();
+    m_newSessionBtn->setText("End Session");
+    disconnect(m_newSessionBtn, nullptr, nullptr, nullptr);
+    connect(m_newSessionBtn, &QPushButton::clicked, this, [this]{
+        m_trainingWidget->stopSession();
+        emit newSessionRequested();
+    });
+});
 }

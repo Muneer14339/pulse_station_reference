@@ -37,6 +37,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+cmake .. -DCMAKE_PREFIX_PATH=$QT_PATH -DOpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4
+
 echo
 echo "=== Build Successful! ==="
 echo "Run: ./build/PulseStation"
