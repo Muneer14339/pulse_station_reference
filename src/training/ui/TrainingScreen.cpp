@@ -351,19 +351,34 @@ void TrainingScreen::onTick() {
     FrameResult result = process_frame(m_currentMode);
 
     // Update camera view
-    if (!result.frame.empty()) {
-        QImage img(result.frame.data,
-                   result.frame.cols, result.frame.rows,
-                   static_cast<int>(result.frame.step),
-                   QImage::Format_BGR888);
-        m_cameraView->setPixmap(
-            QPixmap::fromImage(img).scaled(m_cameraView->size(),
-                                           Qt::KeepAspectRatio,
-                                           Qt::SmoothTransformation));
+    if (!result.frame.empty())
+    {
+        // Convert BGR (OpenCV default) → RGB (Qt expects)
+        cv::Mat rgbFrame;
+        cv::cvtColor(result.frame, rgbFrame, cv::COLOR_BGR2RGB);
 
-        if (!m_camReady && m_phase == Framing) {
+        QImage img(
+            rgbFrame.data,
+            rgbFrame.cols,
+            rgbFrame.rows,
+            static_cast<int>(rgbFrame.step),
+            QImage::Format_RGB888
+        );
+
+        // Copy image to make it safe (prevents memory issues)
+        m_cameraView->setPixmap(
+            QPixmap::fromImage(img.copy()).scaled(
+                m_cameraView->size(),
+                Qt::KeepAspectRatio,
+                Qt::SmoothTransformation
+            )
+        );
+
+        // Camera ready → show Frame Target button
+        if (!m_camReady && m_phase == Framing)
+        {
             m_camReady = true;
-            m_guideBottom->setCurrentIndex(1); // Loading → Frame Target
+            m_guideBottom->setCurrentIndex(1);  // Loading → Frame Target
         }
     }
 
