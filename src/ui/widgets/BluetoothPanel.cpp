@@ -92,7 +92,7 @@ BluetoothPanel::BluetoothPanel(BluetoothManager* btManager, QWidget* parent)
 }
 
 void BluetoothPanel::onDeviceFound(const BluetoothDevice& device) {
-    static const QStringList allowed = {"GMSync", "RA", "SK", "PulseStation"};
+    static const QStringList allowed = {"GMSync", "RA", "SK", "ShotPulse"};
     const bool valid = std::any_of(allowed.begin(), allowed.end(),
         [&](const QString& p) { return device.name.contains(p, Qt::CaseInsensitive); });
     if (!valid) return;

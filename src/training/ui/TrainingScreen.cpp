@@ -1,4 +1,5 @@
 #include "TrainingScreen.h"
+#include "training/data/ScoringGuideData.h"
 #include "common/AppTheme.h"
 #include "common/SnackBar.h"
 #include <QHBoxLayout>
@@ -78,21 +79,18 @@ static QWidget* makeTopBar(bool showDownload,
     return bar;
 }
 
-static QWidget* makeStep(QWidget* parent,
-                          const QString& num, const QString& title,
-                          const QStringList& bullets)
-{
+static QWidget* makeStep(QWidget* parent, const GuideStep& step) {
     auto* block = new QWidget(parent);
     block->setStyleSheet(AppTheme::transparent());
     auto* vb = new QVBoxLayout(block);
-    vb->setContentsMargins(0, 0, 0, 0);
-    vb->setSpacing(4);
-    auto* heading = new QLabel(num + ". " + title, block);
-    heading->setStyleSheet(AppTheme::instructionStep());
+    vb->setContentsMargins(0, 0, 0, 8);
+    vb->setSpacing(6);
+    auto* heading = new QLabel(step.title, block);
+    heading->setStyleSheet(AppTheme::helpTitle());
     vb->addWidget(heading);
-    for (const auto& b : bullets) {
-        auto* lbl = new QLabel("  " + b, block);
-        lbl->setStyleSheet(AppTheme::instructionItem());
+    for (const auto& b : step.bullets) {
+        auto* lbl = new QLabel(b, block);
+        lbl->setStyleSheet(AppTheme::helpItem());
         lbl->setWordWrap(true);
         vb->addWidget(lbl);
     }
@@ -151,24 +149,10 @@ QWidget* TrainingScreen::buildGuidePanel() {
     guideTitle->setAlignment(Qt::AlignCenter);
     cl->addWidget(guideTitle);
 
-    cl->addWidget(makeStep(content, "1", "Start", {
-        "• Attach AimSync BLE device to your finger.",
-        "• Press Start to begin detection, press again to start scoring.",
-        "• After the start beep, fire the first shot."
-    }));
-    cl->addWidget(makeStep(content, "2", "During Shooting", {
-        "• Beep = shot detected → fire the next shot.",
-        "• No beep = shot missed (score 0).",
-        "• Always wait for the beep before firing again."
-    }));
-    cl->addWidget(makeStep(content, "3", "Pause / Resume", {
-        "• Tap Pause anytime.",
-        "• Tap Resume to continue."
-    }));
+    for (const auto& step : scoringGuideSteps())
+        cl->addWidget(makeStep(content, step));
 
-    m_step4 = makeStep(content, "4", "Finish", {
-        "• Session automatically finishes after all shots."
-    });
+    m_step4 = makeStep(content, scoringGuideStep4());
     m_step4->hide();
     cl->addWidget(m_step4);
     cl->addStretch();
