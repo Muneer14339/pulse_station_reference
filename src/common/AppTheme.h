@@ -616,5 +616,4 @@ static inline QString scoreValue() {
         }
     )");
 }
-
 } // namespace AppTheme

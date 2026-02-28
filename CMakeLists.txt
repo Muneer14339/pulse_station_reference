@@ -16,29 +16,46 @@ add_executable(${PROJECT_NAME}
     src/common/CustomButton.cpp
     src/common/PillWidget.cpp
     src/common/SnackBar.cpp
+    src/common/ScanPanel.cpp
 
     # ── Core (business logic / state) ────────────────────────────────────
     src/core/SessionState.cpp
     src/core/DataModels.cpp
     src/core/BluetoothManager.cpp
 
-    # ── UI ────────────────────────────────────────────────────────────────
+    # ── Training Data ─────────────────────────────────────────────────────
+    src/training/data/ReviewDataTypes.cpp
+
+    # ── UI — Shared Widgets ───────────────────────────────────────────────
+    src/ui/widgets/ShotGridWidget.cpp        # shared: TrainingScreen + ShotCountTab
+
+    # ── UI — Main Shell ───────────────────────────────────────────────────
     src/ui/MainWindow.cpp
     src/ui/widgets/ConsoleWidget.cpp
     src/ui/widgets/ReviewScreen.cpp
-    src/training/ui/TrainingPlaceholder.cpp
     src/ui/widgets/BluetoothPanel.cpp
     src/ui/widgets/QRPanel.cpp
     src/ui/widgets/StepFlow.cpp
     src/ui/widgets/ButtonGrid.cpp
     src/ui/widgets/SummaryBox.cpp
 
-    src/common/ScanPanel.cpp
-    src/training/ui/CameraPanel.cpp
+    # ── UI — Session Review Screen (4 tabs) ───────────────────────────────
+    src/ui/review/ReviewPanel.cpp
+    src/ui/review/ShotCountTab.cpp
+    src/ui/review/SessionSummaryTab.cpp
+    src/ui/review/SessionAlbumTab.cpp
+    src/ui/review/ShoQReviewTab.cpp
+    src/ui/review/SessionReviewScreen.cpp
+
+    # ── Training UI ───────────────────────────────────────────────────────
+    src/training/ui/TrainingPlaceholder.cpp
     src/training/ui/TrainingScreen.cpp
+    src/training/ui/CameraPanel.cpp
+    src/training/ui/TrainingWidget.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
 target_link_libraries(${PROJECT_NAME}
     Qt5::Core
     Qt5::Widgets
@@ -57,7 +74,6 @@ file(GLOB TRAINING_SOURCES "src/training/engine/*.cpp")
 list(REMOVE_ITEM TRAINING_SOURCES "${CMAKE_SOURCE_DIR}/src/training/engine/main.cpp")
 
 target_sources(${PROJECT_NAME} PRIVATE
-    src/training/ui/TrainingWidget.cpp
     ${TRAINING_SOURCES}
 )
 

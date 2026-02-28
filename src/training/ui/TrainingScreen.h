@@ -1,4 +1,5 @@
 #pragma once
+// src/training/ui/TrainingScreen.h
 #include <QWidget>
 #include <QLabel>
 #include <QStackedWidget>
@@ -6,31 +7,35 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QScrollArea>
+#include <QDateTime>
 #include "core/SessionState.h"
 #include "training/engine/dart_system.h"
+#include "training/data/ReviewDataTypes.h"
+#include "ui/widgets/ShotGridWidget.h"         // ← shared widget
 
 /**
  * @brief Active training screen.
  *
- * Layout  :  camera feed (left 60%) | control panel (right 40%)
+ * Layout: camera feed (left 60%) | control panel (right 40%)
  *
  * Right panel phases:
- *   Framing     → Loading button until first frame arrives → Frame Target
+ *   Framing     → Loading until first frame → Frame Target
  *   Calibrating → mode_calibration, shows Stop + Start Scoring
- *   Scoring     → confirm_calibration succeeded, shows shot grid
+ *   Scoring     → shot grid (ShotGridWidget — same as ShotCountTab in review)
  *
- * BLE or camera disconnect at any time → stopAndExit().
+ * BLE or camera disconnect → stopAndExit().
+ * Session end → emits sessionEnded(SessionResult) with live shot data.
  */
 class TrainingScreen : public QWidget {
     Q_OBJECT
 public:
     explicit TrainingScreen(SessionState* state, QWidget* parent = nullptr);
 
-    /** Navigate here first, then call this to init engine + start timer. */
+    /** Navigate to this screen first, then call beginSession(). */
     void beginSession();
 
 signals:
-    void sessionEnded();
+    void sessionEnded(const SessionResult& result);
 
 private:
     enum Phase { Framing, Calibrating, Scoring };
@@ -43,7 +48,6 @@ private:
     void enterScoring();
     void stopAndExit();
     void onTick();
-    void addShotRow(int num, int score);
 
     SessionState*   m_state;
 
@@ -51,17 +55,22 @@ private:
     QLabel*         m_cameraView;
 
     // Right
-    QStackedWidget* m_rightStack;      // 0=guide, 1=scoring
-    QStackedWidget* m_guideBottom;     // 0=loading, 1=frameTarget, 2=stop+startScoring
+    QStackedWidget* m_rightStack;       // 0=guide, 1=scoring
+    QStackedWidget* m_guideBottom;      // 0=loading, 1=frameTarget, 2=stop+startScoring
     QWidget*        m_step4;
-    QVBoxLayout*    m_shotsLayout;
+
+    // Scoring panel (right side, index 1)
+    ShotGridWidget* m_shotGrid;         // ← shared with ShotCountTab
     QLabel*         m_totalScore;
     QPushButton*    m_pauseBtn;
 
-    QTimer*         m_tickTimer;
-    Phase           m_phase       = Framing;
-    int             m_currentMode = MODE_STREAMING;
-    bool            m_paused      = false;
-    bool            m_camReady    = false;
-    int             m_shotCount   = 0;
+    QTimer*  m_tickTimer;
+    Phase    m_phase       = Framing;
+    int      m_currentMode = MODE_STREAMING;
+    bool     m_paused      = false;
+    bool     m_camReady    = false;
+
+    // Accumulated live data → packaged into SessionResult on exit
+    QVector<ShotRecord> m_shotRecords;
+    QDateTime           m_sessionStart;
 };
