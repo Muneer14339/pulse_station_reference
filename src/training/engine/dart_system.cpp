@@ -495,3 +495,8 @@ void cleanup_system() {
     
     std::cout << "System cleaned up" << std::endl;
 }
+
+
+std::string get_session_folder() {
+    return g_session_folder;
+}

@@ -1,4 +1,3 @@
-// src/ui/widgets/ShotGridWidget.cpp
 #include "ShotGridWidget.h"
 #include "common/AppTheme.h"
 #include <QHBoxLayout>
@@ -13,8 +12,8 @@ ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(0);
 
-    // ── Column header ────────────────────────────────────────────────────
     auto* header = new QWidget(this);
+    header->setAttribute(Qt::WA_StyledBackground, true);
     header->setStyleSheet(AppTheme::gridHeader());
     auto* hl = new QHBoxLayout(header);
     hl->setContentsMargins(16, 8, 16, 8);
@@ -26,7 +25,6 @@ ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     }
     header->setLayout(hl);
 
-    // ── Scrollable rows ──────────────────────────────────────────────────
     auto* scroll = new QScrollArea(this);
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -49,6 +47,7 @@ ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
 
 QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
     auto* row = new QWidget;
+    row->setAttribute(Qt::WA_StyledBackground, true);
     row->setStyleSheet(AppTheme::gridDataRow());
     auto* rl = new QHBoxLayout(row);
     rl->setContentsMargins(16, 10, 16, 10);
@@ -57,7 +56,6 @@ QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
         ? QStringLiteral("--")
         : QString::number(s.splitTime, 'f', 2) + "\"";
 
-    // Shot#, Score, Split
     for (const QString& txt : { QString::number(s.number),
                                  QString::number(s.score),
                                  splitStr }) {
@@ -67,12 +65,12 @@ QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
         rl->addWidget(l, 1);
     }
 
-    // Direction dot — red using AccentOrangeDark is warm; use StatusError color
-    auto* dot = new QLabel("●", row);
-    dot->setStyleSheet(QStringLiteral(
-        "color: rgb(255,100,100); font-size:13px; background:transparent;"));
-    dot->setAlignment(Qt::AlignCenter);
-    rl->addWidget(dot, 1);
+    // Direction — real text from ShotRecord
+    const QString dirTxt = s.direction.isEmpty() ? QStringLiteral("—") : s.direction;
+    auto* dirLbl = new QLabel(dirTxt, row);
+    dirLbl->setStyleSheet(AppTheme::gridDataCell());
+    dirLbl->setAlignment(Qt::AlignCenter);
+    rl->addWidget(dirLbl, 1);
 
     row->setLayout(rl);
     return row;

@@ -1,4 +1,3 @@
-// src/ui/review/ShoQReviewTab.cpp
 #include "ShoQReviewTab.h"
 #include "common/AppTheme.h"
 #include <QVBoxLayout>
@@ -7,9 +6,6 @@
 #include <QScrollArea>
 #include <QFrame>
 #include <QPushButton>
-
-// ── Local style helpers using only existing AppTheme ──────────────────────────
-// All strings here use colors already defined in AppColors.h
 
 static QWidget* makeDivider(QWidget* parent) {
     auto* d = new QWidget(parent);
@@ -64,7 +60,7 @@ static QWidget* makeMetricCard(const ShoQMetric& m, QWidget* parent) {
     vb->setSpacing(4);
 
     auto* pctLbl = new QLabel(QString::number(m.pct) + "%", card);
-    pctLbl->setStyleSheet(AppTheme::scoreValue());    // big number
+    pctLbl->setStyleSheet(AppTheme::scoreValue());
 
     auto* nameLbl = new QLabel(m.name, card);
     nameLbl->setStyleSheet(AppTheme::sectionTitle());
@@ -88,11 +84,25 @@ static QWidget* makeRatingBox(const ShoQReviewData& d, QWidget* parent) {
     hl->setContentsMargins(16, 14, 16, 14);
     hl->setSpacing(20);
 
+    // Rating letter — use summaryRowHighlight (orange) for the grade
     auto* ratingLbl = new QLabel(d.rating, box);
-    ratingLbl->setStyleSheet(AppTheme::heroTitle()
-                             + " color: rgb(255,182,73);"); // orange from AppColors::AccentOrange
+    ratingLbl->setStyleSheet(AppTheme::heroTitle());
     ratingLbl->setFixedWidth(70);
     ratingLbl->setAlignment(Qt::AlignCenter);
+
+    // Wrap in a small panel so the label stands out with orange accent
+    auto* ratingWrap = new QWidget(box);
+    ratingWrap->setAttribute(Qt::WA_StyledBackground, true);
+    ratingWrap->setStyleSheet(AppTheme::summaryBox());
+    ratingWrap->setFixedWidth(80);
+    auto* rwl = new QVBoxLayout(ratingWrap);
+    rwl->setContentsMargins(4, 8, 4, 8);
+    // Override text color to accent orange via summaryRowHighlight font size match
+    auto* gradeLabel = new QLabel(d.rating, ratingWrap);
+    gradeLabel->setStyleSheet(AppTheme::summaryRowHighlight() + " font-size: 34px; font-weight: 600;");
+    gradeLabel->setAlignment(Qt::AlignCenter);
+    rwl->addWidget(gradeLabel);
+    ratingWrap->setLayout(rwl);
 
     auto* vb = new QVBoxLayout;
     vb->setSpacing(4);
@@ -104,7 +114,7 @@ static QWidget* makeRatingBox(const ShoQReviewData& d, QWidget* parent) {
     vb->addWidget(titleLbl);
     vb->addWidget(descLbl);
 
-    hl->addWidget(ratingLbl);
+    hl->addWidget(ratingWrap);
     hl->addLayout(vb, 1);
     box->setLayout(hl);
     return box;
@@ -126,7 +136,6 @@ ShoQReviewTab::ShoQReviewTab(QWidget* parent) : QWidget(parent) {
 
     m_content = new QWidget;
     m_content->setStyleSheet(AppTheme::transparent());
-    // placeholder — filled in populate()
     m_content->setLayout(new QVBoxLayout(m_content));
     scroll->setWidget(m_content);
     outerVb->addWidget(scroll);
@@ -134,7 +143,6 @@ ShoQReviewTab::ShoQReviewTab(QWidget* parent) : QWidget(parent) {
 }
 
 void ShoQReviewTab::populate(const SessionResult& r) {
-    // Rebuild content every time
     delete m_content->layout();
     const auto children = m_content->children();
     for (auto* c : children)
@@ -144,16 +152,15 @@ void ShoQReviewTab::populate(const SessionResult& r) {
     vb->setContentsMargins(20, 20, 20, 32);
     vb->setSpacing(16);
 
-    // ── Header ────────────────────────────────────────────────────────────
+    // Header
     {
         auto* row = new QWidget(m_content);
         row->setStyleSheet(AppTheme::transparent());
         auto* hl = new QHBoxLayout(row);
-        hl->setContentsMargins(0,0,0,0);
+        hl->setContentsMargins(0, 0, 0, 0);
         auto* sessionLbl = new QLabel(
             QString("Session: <b>%1</b> · Shooter: <b>%2</b>")
-                .arg(r.params.sessionId, r.params.shooterId),
-            row);
+                .arg(r.params.sessionId, r.params.shooterId), row);
         sessionLbl->setStyleSheet(AppTheme::labelSecondary());
         hl->addWidget(sessionLbl);
         hl->addStretch();
@@ -161,7 +168,7 @@ void ShoQReviewTab::populate(const SessionResult& r) {
         vb->addWidget(row);
     }
 
-    // ── Review text ───────────────────────────────────────────────────────
+    // Review text
     {
         auto* box = new QWidget(m_content);
         box->setAttribute(Qt::WA_StyledBackground, true);
@@ -181,10 +188,9 @@ void ShoQReviewTab::populate(const SessionResult& r) {
         vb->addWidget(box);
     }
 
-    // ── Insight box ───────────────────────────────────────────────────────
     vb->addWidget(makeInsightBox(r.shoq, m_content));
 
-    // ── Metric cards (2×2 grid) ───────────────────────────────────────────
+    // Metric cards 2-column
     {
         auto* sectionLbl = new QLabel("Performance Metrics", m_content);
         sectionLbl->setStyleSheet(AppTheme::sectionTitle());
@@ -193,21 +199,20 @@ void ShoQReviewTab::populate(const SessionResult& r) {
         auto* grid = new QWidget(m_content);
         grid->setStyleSheet(AppTheme::transparent());
         auto* gl = new QHBoxLayout(grid);
-        gl->setContentsMargins(0,0,0,0);
+        gl->setContentsMargins(0, 0, 0, 0);
         gl->setSpacing(12);
         auto* col1 = new QVBoxLayout; col1->setSpacing(12);
         auto* col2 = new QVBoxLayout; col2->setSpacing(12);
-        for (int i = 0; i < r.shoq.metrics.size(); ++i) {
-            auto* card = makeMetricCard(r.shoq.metrics[i], grid);
-            (i % 2 == 0 ? col1 : col2)->addWidget(card);
-        }
+        for (int i = 0; i < r.shoq.metrics.size(); ++i)
+            (i % 2 == 0 ? col1 : col2)->addWidget(
+                makeMetricCard(r.shoq.metrics[i], grid));
         gl->addLayout(col1, 1);
         gl->addLayout(col2, 1);
         grid->setLayout(gl);
         vb->addWidget(grid);
     }
 
-    // ── Skill focus tip ───────────────────────────────────────────────────
+    // Skill focus
     if (!r.shoq.skillFocusTip.isEmpty()) {
         auto* box = new QWidget(m_content);
         box->setAttribute(Qt::WA_StyledBackground, true);
@@ -226,15 +231,14 @@ void ShoQReviewTab::populate(const SessionResult& r) {
         vb->addWidget(box);
     }
 
-    // ── Rating ────────────────────────────────────────────────────────────
     vb->addWidget(makeRatingBox(r.shoq, m_content));
 
-    // ── Find a Coach CTA ──────────────────────────────────────────────────
+    // Find a Coach CTA
     {
         auto* row = new QWidget(m_content);
         row->setStyleSheet(AppTheme::transparent());
         auto* hl = new QHBoxLayout(row);
-        hl->setContentsMargins(0,0,0,0);
+        hl->setContentsMargins(0, 0, 0, 0);
         hl->addStretch();
         auto* btn = new QPushButton("Find a Coach", row);
         btn->setStyleSheet(AppTheme::buttonPrimary());

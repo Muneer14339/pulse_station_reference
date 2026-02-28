@@ -1,4 +1,3 @@
-// src/ui/review/SessionAlbumTab.cpp
 #include "SessionAlbumTab.h"
 #include "common/AppTheme.h"
 #include <QVBoxLayout>
@@ -15,7 +14,7 @@ public:
         : QWidget(parent), m_shots(shots), m_idx(startIdx)
     {
         setAttribute(Qt::WA_StyledBackground, true);
-        setStyleSheet("background: rgba(5,8,20,230); border: none;");
+        setStyleSheet(AppTheme::panel());
         setGeometry(parent->rect());
         raise();
         show();
@@ -29,11 +28,10 @@ private:
         root->setContentsMargins(40, 30, 40, 30);
         root->setSpacing(16);
 
-        // Close button
         auto* topRow = new QWidget(this);
         topRow->setStyleSheet(AppTheme::transparent());
         auto* tl = new QHBoxLayout(topRow);
-        tl->setContentsMargins(0,0,0,0);
+        tl->setContentsMargins(0, 0, 0, 0);
         tl->addStretch();
         auto* closeBtn = new QPushButton("✕", topRow);
         closeBtn->setStyleSheet(AppTheme::refreshButton());
@@ -44,11 +42,10 @@ private:
         topRow->setLayout(tl);
         root->addWidget(topRow);
 
-        // Image area + nav
         auto* midRow = new QWidget(this);
         midRow->setStyleSheet(AppTheme::transparent());
         auto* ml = new QHBoxLayout(midRow);
-        ml->setContentsMargins(0,0,0,0);
+        ml->setContentsMargins(0, 0, 0, 0);
         ml->setSpacing(12);
 
         m_prevBtn = new QPushButton("‹", midRow);
@@ -60,8 +57,7 @@ private:
         m_imageLabel = new QLabel(midRow);
         m_imageLabel->setAlignment(Qt::AlignCenter);
         m_imageLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        m_imageLabel->setStyleSheet("background: rgb(10,10,14); border: 1px solid rgba(255,255,255,30); border-radius: 8px;");
-        m_imageLabel->setText("No Image");
+        m_imageLabel->setStyleSheet(AppTheme::cameraView());
         m_imageLabel->setMinimumSize(400, 300);
 
         m_nextBtn = new QPushButton("›", midRow);
@@ -76,7 +72,6 @@ private:
         midRow->setLayout(ml);
         root->addWidget(midRow, 1);
 
-        // Detail row
         auto* detailBox = new QWidget(this);
         detailBox->setAttribute(Qt::WA_StyledBackground, true);
         detailBox->setStyleSheet(AppTheme::summaryBox());
@@ -85,9 +80,9 @@ private:
 
         m_shotNumLbl = new QLabel(detailBox);
         m_shotNumLbl->setStyleSheet(AppTheme::sectionTitle());
-        m_scoreLbl   = new QLabel(detailBox);
+        m_scoreLbl = new QLabel(detailBox);
         m_scoreLbl->setStyleSheet(AppTheme::summaryRowHighlight());
-        m_zoomLbl    = new QLabel("Scroll to zoom", detailBox);
+        m_zoomLbl = new QLabel("Scroll to zoom", detailBox);
         m_zoomLbl->setStyleSheet(AppTheme::labelMuted());
 
         dl->addWidget(m_shotNumLbl);
@@ -111,37 +106,39 @@ private:
         m_prevBtn->setEnabled(m_idx > 0);
         m_nextBtn->setEnabled(m_idx < m_shots.size() - 1);
 
-        if (!s.imagePath.isEmpty()) {
+        if (!s.imagePath.isEmpty() && QFile::exists(s.imagePath)) {
             m_pixmap.load(s.imagePath);
             updateImage();
         } else {
             m_imageLabel->setPixmap(QPixmap());
-            m_imageLabel->setText("No Image");
+            m_imageLabel->setText(QString("Shot #%1 — No Image").arg(s.number));
         }
     }
 
     void updateImage() {
         if (m_pixmap.isNull()) return;
         QSize sz = m_imageLabel->size() * m_zoom;
-        m_imageLabel->setPixmap(m_pixmap.scaled(sz, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        m_imageLabel->setPixmap(
+            m_pixmap.scaled(sz, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     }
 
     void wheelEvent(QWheelEvent* e) override {
         m_zoom = qBound(0.5, m_zoom + (e->angleDelta().y() > 0 ? 0.1 : -0.1), 4.0);
-        m_zoomLbl->setText(QString("Scroll to zoom  (%1×)").arg(QString::number(m_zoom,'f',1)));
+        m_zoomLbl->setText(QString("Scroll to zoom  (%1×)")
+                           .arg(QString::number(m_zoom, 'f', 1)));
         updateImage();
     }
 
     const QVector<ShotRecord>& m_shots;
-    int         m_idx   = 0;
-    double      m_zoom  = 1.0;
-    QPixmap     m_pixmap;
-    QLabel*     m_imageLabel = nullptr;
-    QLabel*     m_shotNumLbl = nullptr;
-    QLabel*     m_scoreLbl   = nullptr;
-    QLabel*     m_zoomLbl    = nullptr;
-    QPushButton* m_prevBtn   = nullptr;
-    QPushButton* m_nextBtn   = nullptr;
+    int          m_idx   = 0;
+    double       m_zoom  = 1.0;
+    QPixmap      m_pixmap;
+    QLabel*      m_imageLabel  = nullptr;
+    QLabel*      m_shotNumLbl  = nullptr;
+    QLabel*      m_scoreLbl    = nullptr;
+    QLabel*      m_zoomLbl     = nullptr;
+    QPushButton* m_prevBtn     = nullptr;
+    QPushButton* m_nextBtn     = nullptr;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -185,19 +182,21 @@ QWidget* SessionAlbumTab::makeCard(const ShotRecord& s, int index) {
     auto* imgLbl = new QLabel(card);
     imgLbl->setFixedHeight(120);
     imgLbl->setAlignment(Qt::AlignCenter);
-    imgLbl->setStyleSheet("background: rgb(10,10,14); border-radius: 4px; color: rgba(255,255,255,80); font-size:12px;");
+    imgLbl->setStyleSheet(AppTheme::cameraView());
 
-    if (!s.imagePath.isEmpty()) {
+    if (!s.imagePath.isEmpty() && QFile::exists(s.imagePath)) {
         QPixmap px(s.imagePath);
         if (!px.isNull())
-            imgLbl->setPixmap(px.scaled(imgLbl->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        else imgLbl->setText("No Image");
+            imgLbl->setPixmap(
+                px.scaled(imgLbl->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        else
+            imgLbl->setText(QString("Shot #%1").arg(s.number));
     } else {
         imgLbl->setText(QString("Shot #%1").arg(s.number));
     }
 
     auto* caption = new QLabel(
-        QString("Shot %1 · Score %2").arg(s.number).arg(s.score), card);
+        QString("Shot %1  ·  Score %2").arg(s.number).arg(s.score), card);
     caption->setStyleSheet(AppTheme::labelMuted());
     caption->setAlignment(Qt::AlignCenter);
 
@@ -205,23 +204,18 @@ QWidget* SessionAlbumTab::makeCard(const ShotRecord& s, int index) {
     vb->addWidget(caption);
     card->setLayout(vb);
 
-    // Click → lightbox
-    int i = index;
-    auto* listener = new QObject(card);
-    card->installEventFilter(listener);
-    connect(listener, &QObject::destroyed, listener, []{});
-    // Use QPushButton trick via overlay
+    // Click overlay
     auto* clickArea = new QPushButton(card);
     clickArea->setGeometry(0, 0, 999, 999);
-    clickArea->setStyleSheet("background: transparent; border: none;");
+    clickArea->setStyleSheet(AppTheme::transparent());
     clickArea->lower();
+    int i = index;
     connect(clickArea, &QPushButton::clicked, this, [this, i]{ showLightbox(i); });
 
     return card;
 }
 
 void SessionAlbumTab::populate(const SessionResult& r) {
-    // Clear old cards
     while (m_grid->count()) {
         auto* item = m_grid->takeAt(0);
         if (item->widget()) item->widget()->deleteLater();

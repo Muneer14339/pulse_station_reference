@@ -70,6 +70,9 @@ int get_total_score();
 int get_last_score();
 int get_shot_count();
 
+// Session folder path (used for image path construction)
+std::string get_session_folder();
+
 // Cleanup
 void cleanup_system();
 

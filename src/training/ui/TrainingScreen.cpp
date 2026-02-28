@@ -6,21 +6,15 @@
 #include <QHBoxLayout>
 #include <QStandardPaths>
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Construction
-// ─────────────────────────────────────────────────────────────────────────────
-
 TrainingScreen::TrainingScreen(SessionState* state, QWidget* parent)
     : QWidget(parent), m_state(state)
 {
     buildUI();
-
     auto onDisconnect = [this](bool ok) { if (!ok) stopAndExit(); };
     connect(m_state, &SessionState::bluetoothConnectionChanged, this, onDisconnect);
     connect(m_state, &SessionState::cameraConnectionChanged,   this, onDisconnect);
-
     m_tickTimer = new QTimer(this);
-    m_tickTimer->setInterval(33);   // ~30 fps
+    m_tickTimer->setInterval(33);
     connect(m_tickTimer, &QTimer::timeout, this, &TrainingScreen::onTick);
 }
 
@@ -31,23 +25,16 @@ void TrainingScreen::beginSession() {
     m_currentMode = MODE_STREAMING;
     m_shotRecords.clear();
     m_sessionStart = QDateTime::currentDateTime();
-
     m_shotGrid->clear();
     m_totalScore->setText("0");
     m_rightStack->setCurrentIndex(0);
     m_guideBottom->setCurrentIndex(0);
     m_step4->hide();
-
     init_system(m_state->cameraIndex(), 600);
     m_tickTimer->start();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Shared UI helpers (file-static)
-// ─────────────────────────────────────────────────────────────────────────────
-
-static QWidget* makeTopBar(bool showDownload,
-                            QObject* ctx,
+static QWidget* makeTopBar(bool showDownload, QObject* ctx,
                             const std::function<void()>& leftAction,
                             const std::function<void()>& downloadAction = {})
 {
@@ -98,10 +85,6 @@ static QWidget* makeStep(QWidget* parent, const GuideStep& step) {
     return block;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  UI build
-// ─────────────────────────────────────────────────────────────────────────────
-
 void TrainingScreen::buildUI() {
     auto* root = new QHBoxLayout(this);
     root->setContentsMargins(0, 0, 0, 0);
@@ -131,7 +114,6 @@ QWidget* TrainingScreen::buildGuidePanel() {
 
     vb->addWidget(makeTopBar(false, this, [this]{ stopAndExit(); }));
 
-    // Scrollable guide content
     auto* scroll = new QScrollArea(panel);
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -155,43 +137,38 @@ QWidget* TrainingScreen::buildGuidePanel() {
     scroll->setWidget(content);
     vb->addWidget(scroll, 1);
 
-    // Bottom — 3 states: 0=Loading, 1=FrameTarget, 2=Stop+StartScoring
     m_guideBottom = new QStackedWidget(panel);
     m_guideBottom->setStyleSheet(AppTheme::transparent());
 
     // 0 — Loading
-    {
-        auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
-        l->setContentsMargins(16, 10, 16, 16); l->addStretch();
-        auto* b = new QPushButton("Loading...", pg);
-        b->setStyleSheet(AppTheme::buttonPrimary()); b->setEnabled(false);
-        l->addWidget(b); pg->setLayout(l); m_guideBottom->addWidget(pg);
-    }
+    { auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
+      l->setContentsMargins(18, 12, 18, 18); l->addStretch();
+      auto* b = new QPushButton("Loading...", pg);
+      b->setStyleSheet(AppTheme::buttonPrimary()); b->setEnabled(false);
+      l->addWidget(b); pg->setLayout(l); m_guideBottom->addWidget(pg); }
+
     // 1 — Frame Target
-    {
-        auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
-        l->setContentsMargins(16, 10, 16, 16); l->addStretch();
-        auto* b = new QPushButton("Frame Target", pg);
-        b->setStyleSheet(AppTheme::buttonPrimary());
-        b->setCursor(Qt::PointingHandCursor);
-        connect(b, &QPushButton::clicked, this, &TrainingScreen::enterCalibrating);
-        l->addWidget(b); pg->setLayout(l); m_guideBottom->addWidget(pg);
-    }
+    { auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
+      l->setContentsMargins(18, 12, 18, 18); l->addStretch();
+      auto* b = new QPushButton("Frame Target", pg);
+      b->setStyleSheet(AppTheme::buttonPrimary());
+      b->setCursor(Qt::PointingHandCursor);
+      connect(b, &QPushButton::clicked, this, &TrainingScreen::enterCalibrating);
+      l->addWidget(b); pg->setLayout(l); m_guideBottom->addWidget(pg); }
+
     // 2 — Stop + Start Scoring
-    {
-        auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
-        l->setContentsMargins(16, 10, 16, 16); l->addStretch();
-        auto* stop = new QPushButton("Stop", pg);
-        stop->setStyleSheet(AppTheme::buttonDanger());
-        stop->setCursor(Qt::PointingHandCursor);
-        connect(stop, &QPushButton::clicked, this, &TrainingScreen::stopAndExit);
-        auto* sc = new QPushButton("Start Scoring", pg);
-        sc->setStyleSheet(AppTheme::buttonPrimary());
-        sc->setCursor(Qt::PointingHandCursor);
-        connect(sc, &QPushButton::clicked, this, &TrainingScreen::enterScoring);
-        l->addWidget(stop); l->addSpacing(8); l->addWidget(sc);
-        pg->setLayout(l); m_guideBottom->addWidget(pg);
-    }
+    { auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
+      l->setContentsMargins(18, 12, 18, 18); l->addStretch();
+      auto* stop = new QPushButton("Stop", pg);
+      stop->setStyleSheet(AppTheme::buttonDanger());
+      stop->setCursor(Qt::PointingHandCursor);
+      connect(stop, &QPushButton::clicked, this, &TrainingScreen::stopAndExit);
+      auto* sc = new QPushButton("Start Scoring", pg);
+      sc->setStyleSheet(AppTheme::buttonPrimary());
+      sc->setCursor(Qt::PointingHandCursor);
+      connect(sc, &QPushButton::clicked, this, &TrainingScreen::enterScoring);
+      l->addWidget(stop); l->addSpacing(10); l->addWidget(sc);
+      pg->setLayout(l); m_guideBottom->addWidget(pg); }
 
     vb->addWidget(m_guideBottom);
     panel->setLayout(vb);
@@ -215,18 +192,25 @@ QWidget* TrainingScreen::buildScoringPanel() {
         SnackBar::show(window(), "Screenshot saved: " + path, SnackBar::Success);
     }));
 
-    // ── SHARED ShotGridWidget ─────────────────────────────────────────────
-    m_shotGrid = new ShotGridWidget(panel);
-    vb->addWidget(m_shotGrid, 1);
+    // Grid with inner margin
+    auto* gridWrapper = new QWidget(panel);
+    gridWrapper->setStyleSheet(AppTheme::transparent());
+    auto* gw = new QVBoxLayout(gridWrapper);
+    gw->setContentsMargins(12, 8, 12, 8);
+    gw->setSpacing(0);
+    m_shotGrid = new ShotGridWidget(gridWrapper);
+    gw->addWidget(m_shotGrid);
+    gridWrapper->setLayout(gw);
+    vb->addWidget(gridWrapper, 1);
 
-    // ── Total score ───────────────────────────────────────────────────────
+    // Total score panel
     auto* scoreBox = new QWidget(panel);
     scoreBox->setStyleSheet(AppTheme::scorePanel());
     auto* sl = new QVBoxLayout(scoreBox);
     sl->setContentsMargins(20, 14, 20, 14);
     sl->setSpacing(2);
     auto* scoreLbl = new QLabel("TOTAL SCORE", scoreBox);
-    scoreLbl->setStyleSheet(AppTheme::labelMuted());
+    scoreLbl->setStyleSheet(AppTheme::summaryRowLabel());
     sl->addWidget(scoreLbl);
     m_totalScore = new QLabel("0", scoreBox);
     m_totalScore->setStyleSheet(AppTheme::scoreValue());
@@ -234,11 +218,12 @@ QWidget* TrainingScreen::buildScoringPanel() {
     scoreBox->setLayout(sl);
     vb->addWidget(scoreBox);
 
-    // ── Pause + End ───────────────────────────────────────────────────────
+    // Pause + End
     auto* bar = new QWidget(panel);
     bar->setStyleSheet(AppTheme::transparent());
     auto* bl = new QHBoxLayout(bar);
-    bl->setContentsMargins(16, 10, 16, 16);
+    bl->setContentsMargins(18, 12, 18, 18);
+    bl->setSpacing(10);
 
     m_pauseBtn = new QPushButton("⏸  Pause", bar);
     m_pauseBtn->setStyleSheet(AppTheme::buttonDanger());
@@ -263,10 +248,6 @@ QWidget* TrainingScreen::buildScoringPanel() {
     return panel;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Phase transitions
-// ─────────────────────────────────────────────────────────────────────────────
-
 void TrainingScreen::enterCalibrating() {
     m_currentMode = MODE_CALIBRATION;
     m_phase       = Calibrating;
@@ -290,7 +271,6 @@ void TrainingScreen::stopAndExit() {
     m_tickTimer->stop();
     cleanup_system();
 
-    // Build session parameters from state
     SessionParameters params;
     params.sessionId      = m_sessionStart.toString("'PA_'yyyy-MM-dd_HHmm");
     params.shooterId      = "JohnD";
@@ -302,10 +282,6 @@ void TrainingScreen::stopAndExit() {
 
     emit sessionEnded(SessionResult::buildMockResult(m_shotRecords, params));
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Tick
-// ─────────────────────────────────────────────────────────────────────────────
 
 void TrainingScreen::onTick() {
     if (m_paused) return;
@@ -323,7 +299,7 @@ void TrainingScreen::onTick() {
 
         if (!m_camReady && m_phase == Framing) {
             m_camReady = true;
-            m_guideBottom->setCurrentIndex(1);  // Loading → Frame Target
+            m_guideBottom->setCurrentIndex(1);
         }
     }
 
@@ -331,8 +307,10 @@ void TrainingScreen::onTick() {
         ShotRecord rec;
         rec.number    = result.shot.shot_number;
         rec.score     = result.shot.score;
-        // rec.splitTime = m_shotRecords.isEmpty() ? -1.0 : result.shot.split_time;
         rec.splitTime = -1.0;
+        // Set real image path saved by dart_system
+        rec.imagePath = QString::fromStdString(get_session_folder())
+                        + "/shot_" + QString::number(result.shot.shot_number) + ".png";
         m_shotRecords.append(rec);
         m_shotGrid->addShot(rec);
         m_totalScore->setText(QString::number(result.shot.total_score));

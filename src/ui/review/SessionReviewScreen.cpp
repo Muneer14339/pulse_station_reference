@@ -1,4 +1,3 @@
-// src/ui/review/SessionReviewScreen.cpp
 #include "SessionReviewScreen.h"
 #include "common/AppTheme.h"
 #include <QVBoxLayout>
@@ -14,10 +13,10 @@ void SessionReviewScreen::buildUI() {
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(0);
 
-    // ── Tab bar ───────────────────────────────────────────────────────────
+    // ── Tab bar — transparent (inherits dark bg from consoleContainer) ────
     auto* tabBar = new QWidget(this);
-    tabBar->setStyleSheet(
-        "QWidget { background: rgba(9,14,27,255); border-bottom: 1px solid rgba(255,255,255,20); }");
+    tabBar->setAttribute(Qt::WA_StyledBackground, true);
+    tabBar->setStyleSheet(AppTheme::transparent());
     auto* tl = new QHBoxLayout(tabBar);
     tl->setContentsMargins(0, 0, 0, 0);
     tl->setSpacing(0);
@@ -36,6 +35,12 @@ void SessionReviewScreen::buildUI() {
     tabBar->setLayout(tl);
     vb->addWidget(tabBar);
 
+    // Divider below tab bar
+    auto* tabDiv = new QWidget(this);
+    tabDiv->setFixedHeight(1);
+    tabDiv->setStyleSheet(AppTheme::divider());
+    vb->addWidget(tabDiv);
+
     // ── Content stack ─────────────────────────────────────────────────────
     m_shotCountTab = new ShotCountTab(this);
     m_summaryTab   = new SessionSummaryTab(this);
@@ -49,10 +54,16 @@ void SessionReviewScreen::buildUI() {
     m_stack->addWidget(m_shoqTab);
     vb->addWidget(m_stack, 1);
 
-    // ── Bottom action bar ─────────────────────────────────────────────────
+    // Divider above bottom bar
+    auto* bottomDiv = new QWidget(this);
+    bottomDiv->setFixedHeight(1);
+    bottomDiv->setStyleSheet(AppTheme::divider());
+    vb->addWidget(bottomDiv);
+
+    // ── Bottom action bar — transparent ───────────────────────────────────
     auto* bottomBar = new QWidget(this);
-    bottomBar->setStyleSheet(
-        "QWidget { background: rgba(9,14,27,255); border-top: 1px solid rgba(255,255,255,20); }");
+    bottomBar->setAttribute(Qt::WA_StyledBackground, true);
+    bottomBar->setStyleSheet(AppTheme::transparent());
     auto* bl = new QHBoxLayout(bottomBar);
     bl->setContentsMargins(24, 12, 24, 12);
 
@@ -74,31 +85,17 @@ void SessionReviewScreen::buildUI() {
     vb->addWidget(bottomBar);
 
     setLayout(vb);
-    switchTab(0);   // start on Shot Count
+    switchTab(0);
 }
 
 void SessionReviewScreen::switchTab(int index) {
     m_stack->setCurrentIndex(index);
     for (int i = 0; i < m_tabBtns.size(); ++i) {
-        const bool active = (i == index);
-        m_tabBtns[i]->setStyleSheet(active
-            ? R"(
-                QPushButton {
-                    background: rgba(255,182,73,18);
-                    border-bottom: 3px solid rgb(255,182,73);
-                    color: rgb(255,182,73);
-                    font-weight: 600;
-                    font-size: 15px;
-                    border-top: none; border-left: none; border-right: none;
-                })"
-            : R"(
-                QPushButton {
-                    background: transparent;
-                    border: none;
-                    color: rgb(140,147,181);
-                    font-size: 15px;
-                }
-                QPushButton:hover { background: rgba(255,255,255,8); color: rgb(210,215,245); })");
+        if (i == index) {
+            m_tabBtns[i]->setStyleSheet(AppTheme::connectButton());
+        } else {
+            m_tabBtns[i]->setStyleSheet(AppTheme::buttonGhost());
+        }
     }
 }
 
