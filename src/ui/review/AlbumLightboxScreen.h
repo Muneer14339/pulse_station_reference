@@ -8,9 +8,8 @@
 
 /**
  * Fullscreen shot image viewer.
- * Left:  image in QScrollArea (scroll-wheel zoom — only the image scales, not the UI)
- *        prev/next arrows; boundary arrow hidden automatically.
- * Right: details panel (full height = image area), close button inside panel header row.
+ * Zoom: scroll-wheel + pinch gesture (touchscreen).
+ * Nav: QPushButton with large guillemet arrows — reliable on all platforms.
  */
 class AlbumLightboxScreen : public QWidget {
     Q_OBJECT
@@ -21,25 +20,24 @@ public:
 signals:
     void closeRequested();
 
+protected:
+    void wheelEvent(QWheelEvent* e) override;
+    bool event(QEvent* e) override;
+
 private:
     void loadShot(int idx);
-    void applyZoom();
-    void wheelEvent(QWheelEvent* event) override;
+    void applyZoom(double newZoom);
 
-    // data
     QVector<ShotRecord> m_shots;
-    int    m_idx  = 0;
-    double m_zoom = 1.0;
+    int     m_idx  = 0;
+    double  m_zoom = 1.0;
     QPixmap m_pixmap;
 
-    // image side
     QScrollArea* m_scrollArea  = nullptr;
     QLabel*      m_imageLabel  = nullptr;
     QLabel*      m_zoomHint    = nullptr;
     QPushButton* m_prevBtn     = nullptr;
     QPushButton* m_nextBtn     = nullptr;
-
-    // details side
     QLabel* m_detailSession = nullptr;
     QLabel* m_detailShot    = nullptr;
     QLabel* m_detailScore   = nullptr;

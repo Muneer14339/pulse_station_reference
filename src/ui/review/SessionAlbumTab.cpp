@@ -17,12 +17,12 @@ SessionAlbumTab::SessionAlbumTab(QWidget* parent) : QWidget(parent) {
     m_stack = new QStackedWidget(this);
 
     // ── Page 0: grid ─────────────────────────────────────────────────────────
-    auto* gridPage = new QWidget(m_stack);
-    gridPage->setStyleSheet(AppTheme::transparent());
-    auto* gvb = new QVBoxLayout(gridPage);
+    m_gridPage = new QWidget(m_stack);
+    m_gridPage->setStyleSheet(AppTheme::transparent());
+    auto* gvb = new QVBoxLayout(m_gridPage);
     gvb->setContentsMargins(0, 0, 0, 0);
 
-    auto* scroll = new QScrollArea(gridPage);
+    auto* scroll = new QScrollArea(m_gridPage);
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     scroll->setStyleSheet(AppTheme::scrollArea());
@@ -31,62 +31,70 @@ SessionAlbumTab::SessionAlbumTab(QWidget* parent) : QWidget(parent) {
     auto* container = new QWidget;
     container->setStyleSheet(AppTheme::transparent());
     m_grid = new QGridLayout(container);
-    m_grid->setContentsMargins(16, 16, 16, 16);
-    m_grid->setSpacing(10);
-    m_grid->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    m_grid->setContentsMargins(MARGINS, MARGINS, MARGINS, MARGINS);
+    m_grid->setSpacing(SPACING);
+    m_grid->setAlignment(Qt::AlignTop);  // top-align rows, but columns fill full width
+    for (int c = 0; c < COLS; ++c)
+        m_grid->setColumnStretch(c, 1);  // equal stretch → cards fill entire row
     container->setLayout(m_grid);
     scroll->setWidget(container);
     gvb->addWidget(scroll, 1);
-    gridPage->setLayout(gvb);
+    m_gridPage->setLayout(gvb);
 
-    // ── Page 1: lightbox screen ───────────────────────────────────────────────
+    // ── Page 1: lightbox ─────────────────────────────────────────────────────
     m_lightbox = new AlbumLightboxScreen(m_stack);
     connect(m_lightbox, &AlbumLightboxScreen::closeRequested,
             this, [this]{ m_stack->setCurrentIndex(0); });
 
-    m_stack->addWidget(gridPage);   // 0
-    m_stack->addWidget(m_lightbox); // 1
+    m_stack->addWidget(m_gridPage);
+    m_stack->addWidget(m_lightbox);
 
     vb->addWidget(m_stack, 1);
     setLayout(vb);
 }
 
-QWidget* SessionAlbumTab::makeCard(const ShotRecord& s, int index) {
+int SessionAlbumTab::cardSize() const {
+    // Width available after margins and spacing between 3 columns
+    const int available = width() - 2 * MARGINS - (COLS - 1) * SPACING;
+    return qMax(100, (available * 75 / 100) / COLS);  // min 100px
+}
+
+QWidget* SessionAlbumTab::makeCard(const ShotRecord& s, int index, int sz) {
     auto* card = new QWidget(this);
-    card->setFixedSize(CARD_SIZE, CARD_SIZE);
+    card->setFixedSize(sz, sz);
     card->setAttribute(Qt::WA_StyledBackground, true);
     card->setStyleSheet(AppTheme::deviceCard());
     card->setCursor(Qt::PointingHandCursor);
 
     // Image — fills entire card
     auto* imgLbl = new QLabel(card);
-    imgLbl->setGeometry(0, 0, CARD_SIZE, CARD_SIZE);
+    imgLbl->setGeometry(0, 0, sz, sz);
     imgLbl->setAlignment(Qt::AlignCenter);
     imgLbl->setStyleSheet(AppTheme::cameraView());
 
     if (!s.imagePath.isEmpty() && QFile::exists(s.imagePath)) {
         QPixmap px(s.imagePath);
-        if (!px.isNull()) {
+        if (!px.isNull())
             imgLbl->setPixmap(
-                px.scaled(QSize(CARD_SIZE, CARD_SIZE),
+                px.scaled(QSize(sz, sz),
                           Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
-        } else {
+        else
             imgLbl->setText(QString("Shot #%1").arg(s.number));
-        }
     } else {
         imgLbl->setText(QString("Shot #%1").arg(s.number));
     }
 
-    // Caption — overlaid at bottom, with horizontal padding so text doesn't touch edges
+    // Caption — inset from card edges so it doesn't touch the border
     auto* caption = new QWidget(card);
-    caption->setGeometry(0, CARD_SIZE - CAPTION_H, CARD_SIZE, CAPTION_H);
+    caption->setGeometry(CAPTION_MX,
+                         sz - CAPTION_H - CAPTION_MB,
+                         sz - 2 * CAPTION_MX,
+                         CAPTION_H);
     caption->setAttribute(Qt::WA_StyledBackground, true);
-    caption->setStyleSheet(AppTheme::gridHeader());  // app-standard overlay bar style
+    caption->setStyleSheet(AppTheme::captionOverlay());
 
     auto* cl = new QHBoxLayout(caption);
-    // Margins: 12px left/right so text has breathing room from card border
-    // 0 top/bottom since caption bar itself has fixed height
-    cl->setContentsMargins(12, 0, 12, 0);
+    cl->setContentsMargins(8, 0, 8, 0);
     auto* lbl = new QLabel(
         QString("Shot %1  ·  Score %2").arg(s.number).arg(s.score), caption);
     lbl->setStyleSheet(AppTheme::summaryRowLabel());
@@ -96,28 +104,41 @@ QWidget* SessionAlbumTab::makeCard(const ShotRecord& s, int index) {
 
     // Transparent click overlay
     auto* btn = new QPushButton(card);
-    btn->setGeometry(0, 0, CARD_SIZE, CARD_SIZE);
+    btn->setGeometry(0, 0, sz, sz);
     btn->setStyleSheet(AppTheme::transparent());
     btn->raise();
-    int i = index;
+    const int i = index;
     connect(btn, &QPushButton::clicked, this, [this, i]{ openLightbox(i); });
 
     return card;
 }
 
 void SessionAlbumTab::populate(const SessionResult& r) {
+    m_shots     = r.shots;
+    m_sessionId = r.params.sessionId;
+    m_populated = true;
+    rebuildGrid();
+    m_stack->setCurrentIndex(0);
+}
+
+void SessionAlbumTab::rebuildGrid() {
+    if (!m_populated) return;
+
+    // Clear existing cards
     while (m_grid->count()) {
         auto* item = m_grid->takeAt(0);
         if (item->widget()) item->widget()->deleteLater();
         delete item;
     }
-    m_shots     = r.shots;
-    m_sessionId = r.params.sessionId;
 
+    const int sz = cardSize();
     for (int i = 0; i < m_shots.size(); ++i)
-        m_grid->addWidget(makeCard(m_shots[i], i), i / COLS, i % COLS);
+        m_grid->addWidget(makeCard(m_shots[i], i, sz), i / COLS, i % COLS, Qt::AlignHCenter);
+}
 
-    m_stack->setCurrentIndex(0);
+void SessionAlbumTab::resizeEvent(QResizeEvent* e) {
+    QWidget::resizeEvent(e);
+    rebuildGrid();  // recompute card sizes on every resize
 }
 
 void SessionAlbumTab::openLightbox(int index) {

@@ -5,52 +5,37 @@
 #include <QLabel>
 #include <QScrollArea>
 #include <QFrame>
+#include <QResizeEvent>
 
-// Cell style helpers — border-left gives continuous column divider automatically
-// First column has no left border; rest do. This avoids per-row QWidget dividers.
-static QString cellStyle(bool firstCol, bool isHeader) {
-    const QString base = isHeader ? AppTheme::summaryRowLabel()
-                                  : AppTheme::summaryRowValue();
-    const QString border = firstCol
-        ? "border: none;"
-        : "border-left: 1px solid rgba(255,255,255,20); border-top: none; "
-          "border-right: none; border-bottom: none;";
-    return base + " " + border;
-}
+// Column count — used to calculate divider positions
+static constexpr int COL_COUNT = 4;
 
-// ─────────────────────────────────────────────────────────────────────────────
 ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     setAttribute(Qt::WA_StyledBackground, true);
-    // tablePanel() = summaryBox colors, border-radius:0 for table look
     setStyleSheet(AppTheme::tablePanel());
 
-    auto* vb = new QVBoxLayout(this);
-    vb->setContentsMargins(0, 0, 0, 0);
-    vb->setSpacing(0);
-
-    // Header: bottom separator only, no surrounding rectangle
-    auto* header = new QWidget(this);
-    header->setAttribute(Qt::WA_StyledBackground, true);
-    header->setStyleSheet(AppTheme::gridHeader());
-    auto* hl = new QHBoxLayout(header);
+    // ── Header ───────────────────────────────────────────────────────────────
+    m_header = new QWidget(this);
+    m_header->setAttribute(Qt::WA_StyledBackground, true);
+    m_header->setStyleSheet(AppTheme::gridHeader());
+    auto* hl = new QHBoxLayout(m_header);
     hl->setContentsMargins(0, 0, 0, 0);
     hl->setSpacing(0);
-
-    const char* cols[] = {"SHOT #", "SCORE", "SPLIT TIME", "DIRECTION"};
-    for (int i = 0; i < 4; ++i) {
-        auto* l = new QLabel(cols[i], header);
-        l->setStyleSheet(cellStyle(i == 0, true));
+    for (const char* col : {"SHOT #", "SCORE", "SPLIT TIME", "DIRECTION"}) {
+        auto* l = new QLabel(col, m_header);
+        l->setStyleSheet(AppTheme::summaryRowLabel());
         l->setAlignment(Qt::AlignCenter);
         l->setContentsMargins(0, 10, 0, 10);
         hl->addWidget(l, 1);
     }
-    header->setLayout(hl);
+    m_header->setLayout(hl);
 
-    auto* scroll = new QScrollArea(this);
-    scroll->setWidgetResizable(true);
-    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setStyleSheet(AppTheme::scrollArea());
-    scroll->setFrameShape(QFrame::NoFrame);
+    // ── Scroll body ──────────────────────────────────────────────────────────
+    m_scroll = new QScrollArea(this);
+    m_scroll->setWidgetResizable(true);
+    m_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_scroll->setStyleSheet(AppTheme::scrollArea());
+    m_scroll->setFrameShape(QFrame::NoFrame);
 
     auto* body = new QWidget;
     body->setStyleSheet(AppTheme::transparent());
@@ -59,17 +44,46 @@ ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     m_bodyLayout->setSpacing(0);
     m_bodyLayout->addStretch();
     body->setLayout(m_bodyLayout);
-    scroll->setWidget(body);
+    m_scroll->setWidget(body);
 
-    vb->addWidget(header);
-    vb->addWidget(scroll, 1);
+    auto* vb = new QVBoxLayout(this);
+    vb->setContentsMargins(0, 0, 0, 0);
+    vb->setSpacing(0);
+    vb->addWidget(m_header);
+    vb->addWidget(m_scroll, 1);
     setLayout(vb);
+
+    // ── Overlay column dividers (3 lines for 4 columns) ──────────────────────
+    // These are placed as children of `this`, raised above header + scroll,
+    // and repositioned in resizeEvent to always span full widget height.
+    for (int i = 0; i < COL_COUNT - 1; ++i) {
+        auto* div = new QWidget(this);
+        div->setAttribute(Qt::WA_StyledBackground, true);
+        div->setStyleSheet(AppTheme::columnDivider());
+        div->setFixedWidth(1);
+        div->raise();
+        m_colDividers.append(div);
+    }
+}
+
+void ShotGridWidget::resizeEvent(QResizeEvent* e) {
+    QWidget::resizeEvent(e);
+    repositionDividers();
+}
+
+void ShotGridWidget::repositionDividers() {
+    const int w = width();
+    const int h = height();
+    const int colW = w / COL_COUNT;
+    for (int i = 0; i < m_colDividers.size(); ++i) {
+        const int x = colW * (i + 1);
+        m_colDividers[i]->setGeometry(x, 0, 1, h);  // full height of widget
+    }
 }
 
 QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
     auto* row = new QWidget;
     row->setStyleSheet(AppTheme::transparent());
-
     auto* rl = new QHBoxLayout(row);
     rl->setContentsMargins(0, 0, 0, 0);
     rl->setSpacing(0);
@@ -82,10 +96,9 @@ QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
                                  QString::number(s.score),
                                  splitStr,
                                  s.direction.isEmpty() ? "—" : s.direction };
-
-    for (int i = 0; i < cells.size(); ++i) {
-        auto* l = new QLabel(cells[i], row);
-        l->setStyleSheet(cellStyle(i == 0, false));
+    for (const QString& txt : cells) {
+        auto* l = new QLabel(txt, row);
+        l->setStyleSheet(AppTheme::summaryRowValue());
         l->setAlignment(Qt::AlignCenter);
         l->setContentsMargins(0, 12, 0, 12);
         rl->addWidget(l, 1);

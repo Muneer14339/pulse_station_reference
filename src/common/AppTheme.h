@@ -617,16 +617,56 @@ static inline QString scoreValue() {
     )");
 }
 
-// Table container: like summaryBox but straight corners (for data tables)
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH: Add these methods to AppTheme.h inside the AppTheme class body.
+// After adding, widget files will have ZERO hardcoded colors/fonts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────────────────────────
+// PATCH: Add these methods to AppTheme.h inside the AppTheme class body.
+// ─────────────────────────────────────────────────────────────────────────────
+
+    // Table panel: straight corners for data tables
     static QString tablePanel() {
         return "QWidget { background: rgba(9,14,27,255); "
                "border: 1px solid rgba(255,255,255,20); "
                "border-radius: 0px; }";
     }
 
-    // Large grade/rating text: 34px bold, orange accent, transparent background
+    // Vertical column divider (1px overlay QWidget inside tables)
+    static QString columnDivider() {
+        return "QWidget { background: rgba(255,255,255,20); border: none; }";
+    }
+
+    // Large grade/rating label: 34px bold orange, transparent bg
     static QString gradeLabel() {
         return "QLabel { color: #F5A623; font-size: 34px; font-weight: 600; "
                "background: transparent; border: none; }";
     }
+
+    // Lightbox background (darker than panel)
+    static QString lightboxBg() {
+        return "QWidget { background: rgba(5,8,20,245); border: none; }";
+    }
+
+    // Album card caption — inset from card edges, rounded, dark enough for white text
+    static QString captionOverlay() {
+        return "QWidget { background: rgba(5,8,20,210); border: none; "
+               "border-radius: 6px; }";
+    }
+
+
+    // Lightbox nav arrow button — large font so arrow is clearly visible
+    static QString navArrowButton() {
+        return "QPushButton { background: #F5A623; border: none; border-radius: 8px; "
+               "color: #0A0F1A; font-size: 28px; font-weight: 700; }"
+               "QPushButton:hover { background: #FFB84D; }"
+               "QPushButton:pressed { background: #E09500; }";
+    }
+
+
+
+
+
+
 } // namespace AppTheme
