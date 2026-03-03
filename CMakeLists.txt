@@ -46,6 +46,7 @@ add_executable(${PROJECT_NAME}
     src/ui/review/SessionAlbumTab.cpp
     src/ui/review/ShoQReviewTab.cpp
     src/ui/review/SessionReviewScreen.cpp
+    src/ui/review/AlbumLightboxScreen.cpp
 
     # ── Training UI ───────────────────────────────────────────────────────
     src/training/ui/TrainingPlaceholder.cpp

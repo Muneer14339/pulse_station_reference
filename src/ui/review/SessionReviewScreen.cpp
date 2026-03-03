@@ -18,14 +18,14 @@ void SessionReviewScreen::buildUI() {
     tabBar->setAttribute(Qt::WA_StyledBackground, true);
     tabBar->setStyleSheet(AppTheme::transparent());
     auto* tl = new QHBoxLayout(tabBar);
-    tl->setContentsMargins(0, 0, 0, 0);
-    tl->setSpacing(0);
+    tl->setContentsMargins(16, 0, 16, 0);
+    tl->setSpacing(4);
 
     const QStringList tabNames = {"Shot Count", "Session Summary", "Session Album", "ShoQ Review"};
     for (int i = 0; i < tabNames.size(); ++i) {
         auto* btn = new QPushButton(tabNames[i], tabBar);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setMinimumHeight(48);
+        btn->setMinimumHeight(52);
         btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         int idx = i;
         connect(btn, &QPushButton::clicked, this, [this, idx]{ switchTab(idx); });
@@ -94,7 +94,8 @@ void SessionReviewScreen::switchTab(int index) {
         if (i == index) {
             m_tabBtns[i]->setStyleSheet(AppTheme::connectButton());
         } else {
-            m_tabBtns[i]->setStyleSheet(AppTheme::buttonGhost());
+            // No border, no background — clean text-only tab
+            m_tabBtns[i]->setStyleSheet(AppTheme::transparent());
         }
     }
 }

@@ -616,4 +616,17 @@ static inline QString scoreValue() {
         }
     )");
 }
+
+// Table container: like summaryBox but straight corners (for data tables)
+    static QString tablePanel() {
+        return "QWidget { background: rgba(9,14,27,255); "
+               "border: 1px solid rgba(255,255,255,20); "
+               "border-radius: 0px; }";
+    }
+
+    // Large grade/rating text: 34px bold, orange accent, transparent background
+    static QString gradeLabel() {
+        return "QLabel { color: #F5A623; font-size: 34px; font-weight: 600; "
+               "background: transparent; border: none; }";
+    }
 } // namespace AppTheme

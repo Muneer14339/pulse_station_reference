@@ -2,12 +2,16 @@
 #include "SessionSummaryTab.h"
 #include "common/AppTheme.h"
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 
 SessionSummaryTab::SessionSummaryTab(QWidget* parent) : QWidget(parent) {
     setStyleSheet(AppTheme::transparent());
+
     auto* hl = new QHBoxLayout(this);
-    hl->setContentsMargins(20, 20, 20, 20);
+    hl->setContentsMargins(16, 16, 16, 16);
     hl->setSpacing(16);
+    // No Qt::AlignTop — both panels use Expanding vertical policy (set in ReviewPanel)
+    // so they'll be equal height, filling the available space
 
     m_performancePanel = new ReviewPanel("", "Performance Summary", this);
     m_paramsPanel      = new ReviewPanel("", "Session Parameters",  this);
@@ -22,7 +26,7 @@ void SessionSummaryTab::populate(const SessionResult& r) {
     m_performancePanel->addRow("Scheduled Shots", QString::number(r.params.shotsScheduled));
     m_performancePanel->addRow("Shots Fired",     QString::number(r.shotsFired()));
     m_performancePanel->addRow("Shots Missing",   QString::number(r.shotsMissing()));
-    m_performancePanel->addRow("Total Score",     QString::number(r.totalScore()),  /*highlight=*/true);
+    m_performancePanel->addRow("Total Score",     QString::number(r.totalScore()), true);
     m_performancePanel->addRow("Average Score",   QString::number(r.avgScore(), 'f', 2));
     m_performancePanel->addRow("Avg Split Time",
                                 r.avgSplit() > 0
