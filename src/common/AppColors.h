@@ -1,16 +1,29 @@
 #pragma once
 #include <QColor>
+#include <QtGlobal>
+#include "theme/ThemePalette.h"
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  AppColors — delegates the 7 base tokens to the active ThemePalette.
+//
+//  BREAKING CHANGE from const → inline function:
+//  Old:  AppColors::Primary        (const QColor)
+//  New:  AppColors::Primary()      (inline QColor, reads activeTheme())
+//
+//  Widget code update: add () to Surface and Background in MainWindow.cpp.
+//  All other call sites (inside AppTheme headers) already use () form.
+// ─────────────────────────────────────────────────────────────────────────────
 
 namespace AppColors {
 
-// ① 7 BASE TOKENS — edit only these to retheme
-const QColor Primary       = QColor(255, 182,  73);
-const QColor Background    = QColor(  5,   8,  20);
-const QColor Surface       = QColor( 17,  23,  41);
-const QColor Success       = QColor( 79, 209, 197);
-const QColor Error         = QColor(255, 100, 100);
-const QColor TextPrimary   = QColor(245, 245, 255);
-const QColor TextSecondary = QColor(179, 185, 214);
+// ① 7 BASE TOKENS — now runtime-switchable via setTheme()
+inline QColor Primary()       { return activeTheme().primary;       }
+inline QColor Background()    { return activeTheme().background;     }
+inline QColor Surface()       { return activeTheme().surface;        }
+inline QColor Success()       { return activeTheme().success;        }
+inline QColor Error()         { return activeTheme().error;          }
+inline QColor TextPrimary()   { return activeTheme().textPrimary;    }
+inline QColor TextSecondary() { return activeTheme().textSecondary;  }
 
 // ② UTILITY
 inline QColor withAlpha(const QColor& c, int alpha) {
@@ -18,22 +31,22 @@ inline QColor withAlpha(const QColor& c, int alpha) {
 }
 
 // ③ Accent (alias for Success)
-inline QColor Accent()       { return Success; }
-inline QColor AccentBg()     { return withAlpha(Success,  46); }
-inline QColor AccentGlow()   { return withAlpha(Success, 153); }
-inline QColor AccentBorder() { return withAlpha(Success, 128); }
-inline QColor AccentHover()  { return QColor(65, 195, 183); }
+inline QColor Accent()       { return Success();            }
+inline QColor AccentBg()     { return withAlpha(Success(),  46); }
+inline QColor AccentGlow()   { return withAlpha(Success(), 153); }
+inline QColor AccentBorder() { return withAlpha(Success(), 128); }
+inline QColor AccentHover()  { return QColor(65, 195, 183);     }
 
 // ④ Primary
 inline QColor PrimaryDark()   { return QColor(255, 139,  61); }
 inline QColor PrimaryLight()  { return QColor(255, 224, 166); }
-inline QColor PrimaryBg()     { return withAlpha(Primary,   31); }
-inline QColor PrimaryBorder() { return withAlpha(Primary,  128); }
+inline QColor PrimaryBg()     { return withAlpha(Primary(),   31); }
+inline QColor PrimaryBorder() { return withAlpha(Primary(),  128); }
 
 // ⑤ Surface
 inline QColor SurfaceDeep()    { return QColor(  9,  14,  27); }
 inline QColor SurfaceCard()    { return withAlpha(QColor(13, 19, 40), 204); }
-inline QColor SurfaceOverlay() { return withAlpha(Background, 210); }
+inline QColor SurfaceOverlay() { return withAlpha(Background(), 210); }
 inline QColor CameraBg()       { return QColor( 10,  10,  14); }
 
 // ⑥ Text
@@ -65,8 +78,8 @@ inline QColor PillInactive()   { return QColor( 96, 103, 138); }
 inline QColor ButtonBgNormal() { return withAlpha(QColor(7, 9, 20), 230); }
 
 // ⑪ Status
-inline QColor StatusSuccess() { return withAlpha(Success, 180); }
-inline QColor StatusError()   { return withAlpha(Error,   180); }
+inline QColor StatusSuccess() { return withAlpha(Success(), 180); }
+inline QColor StatusError()   { return withAlpha(Error(),   180); }
 inline QColor StatusInfo()    { return QColor(255, 255, 255, 36); }
 
 } // namespace AppColors

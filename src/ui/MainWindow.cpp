@@ -128,8 +128,8 @@ void MainWindow::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     QRadialGradient gradient(width() / 2, 0, height());
-    gradient.setColorAt(0,   AppColors::Surface);
-    gradient.setColorAt(0.6, AppColors::Background);
+    gradient.setColorAt(0,   AppColors::Surface());    // () add karo
+gradient.setColorAt(0.6, AppColors::Background()); // () add karo
     painter.fillRect(rect(), gradient);
     QMainWindow::paintEvent(event);
 }
