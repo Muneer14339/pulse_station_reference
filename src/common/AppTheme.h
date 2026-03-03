@@ -1,672 +1,451 @@
 #pragma once
 #include <QString>
+#include <QtGlobal>
 #include "AppColors.h"
 
-/**
- * @brief Centralized style sheet provider for PulseStation.
- *
- * RULES:
- *  - Never write raw setStyleSheet() strings in widget code.
- *  - Every visual style must come from one of these functions.
- *  - Font sizes are tuned for a wall-mounted display used by 40+ age users.
- *  - To change a color / font globally, edit ONLY this file.
- */
 namespace AppTheme {
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Font Size Constants  (wall-mount display, 40+ users — keep these large)
-// ─────────────────────────────────────────────────────────────────────────────
-constexpr int FontTiny      = 13;   // device addresses, letter-spaced labels
-constexpr int FontSmall     = 15;   // hints, help text, badge text
-constexpr int FontBody      = 17;   // standard body / list items
-constexpr int FontSubtitle  = 19;   // section subtitles, card sub-labels
-constexpr int FontSection   = 21;   // section headings (Step 1, Step 2 …)
-constexpr int FontTitle     = 26;   // page / screen titles
-constexpr int FontHero      = 34;   // full-screen hero titles
-constexpr int FontHeader    = 24;   // top-bar application title
+// ═════════════════════════════════════════════════════════════════════════════
+//  LAYER 1 — TOKENS
+// ═════════════════════════════════════════════════════════════════════════════
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Global Application Style
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString globalStyle() {
-    return QStringLiteral(R"(
-        QWidget {
-            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-            font-size: 17px;
-            color: rgb(245, 245, 255);
-            background: transparent;
-            border: none;
-        }
-        QLabel {
-            background: transparent;
-            border: none;
-        }
-        QScrollBar:vertical {
-            background: rgba(255, 255, 255, 5);
-            width: 6px;
-            border-radius: 3px;
-        }
-        QScrollBar::handle:vertical {
-            background: rgba(255, 255, 255, 38);
-            border-radius: 3px;
-            min-height: 20px;
-        }
-        QScrollBar::handle:vertical:hover {
-            background: rgba(255, 255, 255, 64);
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
-        QScrollBar:horizontal {
-            background: rgba(255, 255, 255, 5);
-            height: 6px;
-            border-radius: 3px;
-        }
-        QScrollBar::handle:horizontal {
-            background: rgba(255, 255, 255, 38);
-            border-radius: 3px;
-            min-width: 20px;
-        }
-        QScrollBar::handle:horizontal:hover {
-            background: rgba(255, 255, 255, 64);
-        }
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }
-    )");
+constexpr int FontScale = 0;   // change this one value → entire app scales
+
+constexpr int FontTiny     = 15 + FontScale;
+constexpr int FontSmall    = 17 + FontScale;
+constexpr int FontBody     = 19 + FontScale;
+constexpr int FontSubtitle = 21 + FontScale;
+constexpr int FontSection  = 23 + FontScale;
+constexpr int FontTitle    = 30 + FontScale;
+constexpr int FontHero     = 38 + FontScale;
+constexpr int FontHeader   = 26 + FontScale;
+
+constexpr int SpaceXS   =  4;
+constexpr int SpaceS    =  8;
+constexpr int SpaceM    = 12;
+constexpr int SpaceL    = 16;
+constexpr int SpaceXL   = 20;
+constexpr int SpaceXXL  = 24;
+constexpr int SpaceXXXL = 32;
+
+constexpr int RadiusS    =  6;
+constexpr int RadiusM    = 10;
+constexpr int RadiusL    = 12;
+constexpr int RadiusXL   = 16;
+constexpr int RadiusXXL  = 22;
+constexpr int RadiusPill = 999;
+
+constexpr int GridButtonHeight = 80;   // grid selection button height
+
+inline const QString& fontFamily() {
+    static const QString f = QStringLiteral("\"Segoe UI\", system-ui, -apple-system, sans-serif");
+    return f;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Label Styles
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString labelPrimary() {
-    return QStringLiteral("font-size: 17px; color: rgb(245, 245, 255); background: transparent; border: none;");
+// ═════════════════════════════════════════════════════════════════════════════
+//  LAYER 2 — BUILDERS
+// ═════════════════════════════════════════════════════════════════════════════
+
+inline QString rgb(const QColor& c) {
+    return QString("rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg(c.blue());
 }
-inline QString labelSecondary() {
-    return QStringLiteral("font-size: 17px; color: rgb(179, 185, 214); background: transparent; border: none;");
+inline QString rgba(const QColor& c) {
+    return QString("rgba(%1,%2,%3,%4)").arg(c.red()).arg(c.green()).arg(c.blue()).arg(c.alpha());
 }
-inline QString labelMuted() {
-    return QStringLiteral("font-size: 15px; color: rgb(140, 147, 181); background: transparent; border: none;");
-}
-inline QString labelSubtle() {
-    return QStringLiteral("font-size: 15px; color: rgb(113, 120, 164); background: transparent; border: none;");
-}
-inline QString labelAccentCyan() {
-    return QStringLiteral("font-size: 15px; color: rgb(79, 209, 197); background: transparent; border: none;");
-}
-inline QString labelAccentOrange() {
-    return QStringLiteral("font-size: 15px; color: rgb(255, 182, 73); background: transparent; border: none;");
+inline QString rgba(const QColor& c, int alpha) {
+    alpha = qBound(0, alpha, 255);
+    return QString("rgba(%1,%2,%3,%4)").arg(c.red()).arg(c.green()).arg(c.blue()).arg(alpha);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Section & Page Title Styles
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString sectionTitle() {
-    return QStringLiteral("font-size: 19px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
-}
-inline QString sectionHint() {
-    return QStringLiteral("font-size: 15px; color: rgb(140, 147, 181); background: transparent; border: none;");
-}
-inline QString pageTitle() {
-    return QStringLiteral("font-size: 26px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
-}
-inline QString heroTitle() {
-    return QStringLiteral("font-size: 34px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
-}
-inline QString headerAppTitle() {
-    return QStringLiteral("font-size: 22px; letter-spacing: 2px; font-weight: bold; color: rgb(245, 245, 255); background: transparent; border: none;");
-}
-inline QString headerAppSubtitle() {
-    return QStringLiteral("font-size: 14px; color: rgb(179, 185, 214); background: transparent; border: none;");
-}
-inline QString laneLabel() {
-    return QStringLiteral("font-size: 17px; color: rgb(199, 204, 240); background: transparent; border: none;");
-}
-inline QString laneSublabel() {
-    return QStringLiteral("font-size: 15px; color: rgb(179, 185, 214); background: transparent; border: none;");
+inline QString safeExtras(QString e) {
+    e = e.trimmed();
+    if (!e.isEmpty() && !e.endsWith(';')) e += ';';
+    return e;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Step Flow
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString stepLabel() {
-    return QStringLiteral("font-size: 15px; color: rgb(255, 182, 73); letter-spacing: 2px; font-weight: 600; background: transparent; border: none;");
+// wrap: guarantees props end with semicolon before wrapping in selector
+inline QString wrap(const QString& selector, QString props) {
+    return QString("%1 { %2 }").arg(selector, safeExtras(props));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Badge
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString badge() {
-    return QStringLiteral("font-size: 14px; color: rgb(192, 197, 227); "
-                          "padding: 3px 10px; border-radius: 999px; "
-                          "border: 1px solid rgba(255, 255, 255, 36); "
-                          "background: transparent;");
+// textStyle — properties only (no selector).
+// IMPORTANT: background + border are explicit here to prevent cascade bleed.
+// When a parent container has QWidget { border: 1px solid X }, Qt cascades
+// that rule to all child QWidgets. Explicit overrides here block that bleed.
+inline QString textStyle(int px, const QColor& color,
+                          int weight = 400, QString extras = {})
+{
+    return QString("font-size: %1px; font-weight: %2; color: %3; "
+                   "background: transparent; border: none; %4")
+        .arg(px).arg(weight).arg(rgb(color)).arg(safeExtras(extras));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Custom Button (grid selection buttons)
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString customButtonMain() {
-    return QStringLiteral("font-weight: 600; font-size: 17px; color: rgb(245, 245, 255); background: transparent; border: none;");
+// boxStyle — container with bg + border + radius.
+// Uses "QWidget { }" selector so plain QWidget paints its background.
+// Children are NOT affected: their own textStyle() overrides the cascade.
+inline QString boxStyle(const QColor& bg, const QColor& border,
+                         int radius, const QString& selector = "QWidget")
+{
+    return wrap(selector,
+        QString("background: %1; border: 1px solid %2; border-radius: %3px;")
+            .arg(rgba(bg)).arg(rgba(border)).arg(radius));
 }
-inline QString customButtonSub() {
-    return QStringLiteral("font-size: 14px; color: rgb(165, 172, 201); background: transparent; border: none;");
-}
-inline QString buttonNormal() {
-    return QStringLiteral(R"(
+
+// buttonStyle — gradient fill button
+inline QString buttonStyle(const QColor& bgStart, const QColor& bgEnd,
+                            const QColor& borderColor, const QColor& textColor,
+                            int fs, int minH, int radius = RadiusL,
+                            const QString& disabledProps = {})
+{
+    QString s = QString(R"(
         QPushButton {
-            background: qradialgradient(cx:0.2, cy:0.2, radius:1.5, fx:0, fy:0,
-                stop:0 rgba(255,255,255,15), stop:1 rgba(7,9,20,230));
-            border: 1px solid rgba(255, 255, 255, 36);
-            border-radius: 12px;
-            color: rgb(245, 245, 255);
-            text-align: left;
-            padding: 0px;
-            min-height: 70px;
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 %1, stop:1 %2);
+            border: 1px solid %3; border-radius: %4px;
+            color: %5; font-weight: 600; font-size: %6px;
+            padding: %7px %8px; min-height: %9px;
+        }
+    )")
+    .arg(rgb(bgStart)).arg(rgb(bgEnd))
+    .arg(rgb(borderColor)).arg(radius)
+    .arg(rgb(textColor)).arg(fs)
+    .arg(SpaceM).arg(SpaceXXL).arg(minH);
+    if (!disabledProps.isEmpty())
+        s += wrap("QPushButton:disabled", disabledProps);
+    return s;
+}
+
+// outlineButtonStyle — transparent / ghost / outline button
+inline QString outlineButtonStyle(const QColor& borderColor, const QColor& textColor,
+                                   int fs, int minH,
+                                   const QString& hoverBg = {},
+                                   const QString& borderStyle = "solid",
+                                   int radius = RadiusL)
+{
+    const QString hover = hoverBg.isEmpty() ? rgba(AppColors::TextPrimary, 13) : hoverBg;
+    return QString(R"(
+        QPushButton {
+            background: transparent;
+            border: 1px %1 %2; border-radius: %3px;
+            color: %4; font-size: %5px;
+            padding: %6px %7px; min-height: %8px;
+        }
+        QPushButton:hover  { background: %9; }
+        QPushButton:disabled { color: %10; border-color: %11; }
+    )")
+    .arg(borderStyle).arg(rgba(borderColor)).arg(radius)
+    .arg(rgb(textColor)).arg(fs)
+    .arg(SpaceM).arg(SpaceXXL).arg(minH)
+    .arg(hover)
+    .arg(rgba(borderColor, borderColor.alpha() / 2))
+    .arg(rgba(borderColor, borderColor.alpha() / 2));
+}
+
+// radialButtonStyle — grid selection button (all 3 states share this builder)
+// cx/cy   = gradient center  (normal: 0.2/0.2,  selected: 0.5/0.0)
+// radius  = gradient radius  (normal: 1.5,       selected: 1.2)
+// fx/fy   = focal point      (normal: 0.0/0.0,   selected: 0.5/0.0)
+inline QString radialButtonStyle(const QColor& stop0, const QColor& stop1,
+                                  const QColor& borderColor, int borderWidth = 1,
+                                  double cx = 0.2, double cy = 0.2,
+                                  double gradRadius = 1.5,
+                                  double fx = 0.0, double fy = 0.0)
+{
+    return QString(R"(
+        QPushButton {
+            background: qradialgradient(cx:%1,cy:%2,radius:%3,fx:%4,fy:%5,
+                stop:0 %6, stop:1 %7);
+            border: %8px solid %9; border-radius: %10px;
+            color: %11; text-align: left; padding: 0px; min-height: %12px;
         }
         QLabel { border: none; background: transparent; }
-    )");
-}
-inline QString buttonHover() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: qradialgradient(cx:0.2, cy:0.2, radius:1.5, fx:0, fy:0,
-                stop:0 rgba(255,255,255,25), stop:1 rgba(7,9,20,230));
-            border: 1px solid rgba(255, 255, 255, 50);
-            border-radius: 12px;
-            color: rgb(245, 245, 255);
-            text-align: left;
-            padding: 0px;
-            min-height: 70px;
-        }
-        QLabel { border: none; background: transparent; }
-    )");
-}
-inline QString buttonSelected() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: qradialgradient(cx:0.5, cy:0, radius:1.2, fx:0.5, fy:0,
-                stop:0 rgba(79,209,197,46), stop:1 rgba(7,11,24,242));
-            border: 2px solid rgba(79, 209, 197, 255);
-            border-radius: 12px;
-            color: rgb(245, 245, 255);
-            text-align: left;
-            padding: 0px;
-            min-height: 70px;
-        }
-        QLabel { border: none; background: transparent; }
-    )");
+    )")
+    .arg(cx, 0, 'f', 1).arg(cy, 0, 'f', 1)
+    .arg(gradRadius, 0, 'f', 1)
+    .arg(fx, 0, 'f', 1).arg(fy, 0, 'f', 1)
+    .arg(rgba(stop0)).arg(rgba(stop1))
+    .arg(borderWidth).arg(rgba(borderColor))
+    .arg(RadiusL).arg(rgb(AppColors::TextPrimary))
+    .arg(GridButtonHeight);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Primary Action Button  (orange gradient — confirm / next)
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString buttonPrimary() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 rgb(255,182,73), stop:1 rgb(255,139,61));
-            border: 1px solid rgb(255, 182, 73);
-            border-radius: 12px;
-            color: rgb(27, 27, 35);
-            font-weight: 600;
-            font-size: 17px;
-            padding: 14px 24px;
-            min-height: 48px;
-        }
-        QPushButton:disabled {
-            background: rgba(255, 182, 73, 60);
-            border: 1px solid rgba(255, 182, 73, 40);
-            color: rgba(27, 27, 35, 100);
-        }
-    )");
-}
+// ═════════════════════════════════════════════════════════════════════════════
+//  GLOBAL STYLE
+// ═════════════════════════════════════════════════════════════════════════════
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Secondary / Ghost Action Buttons  (back, reset)
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString buttonGhost() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: transparent;
-            border: 1px dashed rgba(255, 255, 255, 64);
-            border-radius: 12px;
-            color: rgb(179, 185, 214);
-            padding: 14px 24px;
-            min-height: 48px;
-            font-size: 17px;
-        }
-        QPushButton:hover { background: rgba(255, 255, 255, 13); }
-    )");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Bluetooth Panel Buttons
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString refreshButton() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: transparent;
-            border: 1px solid rgba(79, 209, 197, 128);
-            border-radius: 6px;
-            color: rgb(79, 209, 197);
-            padding: 4px 8px;
-            font-size: 18px;
-        }
-        QPushButton:hover { background: rgba(79, 209, 197, 26); }
-        QPushButton:disabled {
-            color: rgba(79, 209, 197, 60);
-            border-color: rgba(79, 209, 197, 40);
-        }
-    )");
-}
-inline QString connectButton() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: transparent;
-            border: 1px solid rgb(79, 209, 197);
-            border-radius: 8px;
-            color: rgb(79, 209, 197);
-            padding: 8px 18px;
-            font-size: 15px;
-            font-weight: 600;
-        }
-        QPushButton:hover { background: rgba(79, 209, 197, 26); }
-    )");
-}
-inline QString disconnectButton() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: rgb(79, 209, 197);
-            border: none;
-            border-radius: 8px;
-            color: rgb(10, 15, 25);
-            padding: 8px 18px;
-            font-size: 15px;
-            font-weight: 600;
-        }
-        QPushButton:hover { background: rgb(65, 195, 183); }
-    )");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Containers / Panels
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString consoleContainer() {
-    return QStringLiteral("background: rgb(17, 23, 41); "
-                          "border: 1px solid rgba(255, 255, 255, 20); "
-                          "border-radius: 22px;");
-}
-inline QString headerBar() {
-    return QStringLiteral("QWidget { "
-                          "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-                          "  stop:0 rgba(9,13,30,242), stop:1 rgba(13,19,40,242)); "
-                          "border: none; "
-                          "border-bottom: 1px solid rgba(255, 255, 255, 15); }");
-}
-inline QString sidePanel() {
-    return QStringLiteral("background: transparent; "
-                          "border-right: 1px solid rgba(255, 255, 255, 51);");
-}
-inline QString panel() {
-    return QStringLiteral("background: rgba(9, 14, 27, 255); "
-                          "border: 1px solid rgba(255, 255, 255, 20); "
-                          "border-radius: 16px;");
-}
-inline QString offlinePanel() {
-    return panel(); // same visual, different semantic purpose
-}
-inline QString helpPanel() {
-    return QStringLiteral("background: rgba(9, 14, 27, 153); "
-                          "border: 1px solid rgba(255, 255, 255, 51); "
-                          "border-radius: 10px;");
-}
-inline QString deviceCard() {
-    return QStringLiteral("QWidget { "
-                          "background: rgba(13, 19, 40, 204); "
-                          "border: 1px solid rgba(255, 255, 255, 51); "
-                          "border-radius: 10px; }");
-}
-inline QString connectedCard() {
-    return QStringLiteral("QWidget { "
-                          "background: rgba(13, 19, 40, 204); "
-                          "border: 1px solid rgb(79, 209, 197); "
-                          "border-radius: 10px; }");
-}
-inline QString scrollArea() {
-    return QStringLiteral("QScrollArea { border: none; background: transparent; }");
-}
-inline QString transparent() {
-    return QStringLiteral("background: transparent; border: none;");
-}
-inline QString summaryBox() {
-    return QStringLiteral("background: rgba(12, 18, 32, 242); "
-                          "border: 1px solid rgba(255, 255, 255, 26); "
-                          "border-radius: 10px;");
-}
-inline QString divider() {
-    return QStringLiteral("background: rgba(255, 255, 255, 31); height: 1px; border: none;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Bluetooth – Device Labels
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString deviceName() {
-    return QStringLiteral("font-size: 17px; font-weight: 600; color: rgb(230, 233, 255); background: transparent; border: none;");
-}
-inline QString deviceAddress() {
-    return QStringLiteral("font-size: 13px; color: rgb(113, 120, 164); background: transparent; border: none;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Loading / Empty States
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString loaderDots() {
-    return QStringLiteral("font-size: 20px; color: rgba(79,209,197,160); letter-spacing: 6px; background: transparent; border: none;");
-}
-inline QString loaderText() {
-    return QStringLiteral("font-size: 15px; color: rgb(113,120,164); background: transparent; border: none; margin-top: 6px;");
-}
-inline QString emptyIcon() {
-    return QStringLiteral("font-size: 30px; color: rgba(113,120,164,120); background: transparent; border: none;");
-}
-inline QString emptyText() {
-    return QStringLiteral("font-size: 15px; color: rgb(113,120,164); background: transparent; border: none; margin-top: 6px;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Summary Box Rows
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString summaryRowLabel() {
-    return QStringLiteral("font-size: 13px; color: rgb(157, 164, 197); letter-spacing: 1px; background: transparent; border: none;");
-}
-inline QString summaryRowValue() {
-    return QStringLiteral("font-size: 17px; color: rgb(212, 216, 243); background: transparent; border: none;");
-}
-inline QString summaryRowHighlight() {
-    return QStringLiteral("font-size: 17px; color: rgb(255, 182, 73); background: transparent; border: none;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Help Panel Labels
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString helpTitle() {
-    return QStringLiteral("font-size: 16px; font-weight: 600; color: rgb(199, 204, 240); background: transparent; border: none;");
-}
-inline QString helpItem() {
-    return QStringLiteral("font-size: 15px; color: rgb(165, 172, 201); background: transparent; border: none;");
-}
-inline QString helpEmail() {
-    return QStringLiteral("font-size: 15px; color: rgb(79, 209, 197); background: transparent; border: none;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  SnackBar
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString snackBar(const QString& borderColor) {
-    return QString("QWidget { background: rgb(9, 13, 30); border: 1px solid %1; border-radius: 12px; }")
-           .arg(borderColor);
-}
-inline QString snackBarText() {
-    return QStringLiteral("font-size: 16px; color: rgb(230, 233, 255); background: transparent; border: none;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  QR Panel
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString qrScanZone() {
-    return QStringLiteral("background: qradialgradient(cx:0.5, cy:0.5, radius:0.8, fx:0.5, fy:0.5, "
-                          "  stop:0 rgba(255,255,255,13), stop:1 rgba(5,7,16,242)); "
-                          "border: 1px dashed rgba(255, 255, 255, 46); "
-                          "border-radius: 12px;");
-}
-inline QString qrScanLabel() {
-    return QStringLiteral("font-size: 14px; color: rgb(163, 173, 212); letter-spacing: 2px;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Pill Widget States
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString pillActive() {
-    return QStringLiteral("PillWidget { background: rgba(255,182,73,31); "
-                          "border: 1px solid rgb(255,182,73); border-radius: 999px; }");
-}
-inline QString pillInactive() {
-    return QStringLiteral("PillWidget { background: transparent; "
-                          "border: 1px solid rgba(255,255,255,31); border-radius: 999px; }");
-}
-inline QString pillDotActive() {
-    return QStringLiteral("background: rgb(255,182,73); border-radius: 4px; border: none;");
-}
-inline QString pillDotInactive() {
-    return QStringLiteral("background: rgb(96,103,138); border-radius: 4px; border: none;");
-}
-inline QString pillLabelActive() {
-    return QStringLiteral("font-size: 15px; color: rgb(255,224,166); background: transparent; border: none;");
-}
-inline QString pillLabelInactive() {
-    return QStringLiteral("font-size: 15px; color: rgb(179,185,214); background: transparent; border: none;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Icon Labels
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString warningIcon() {
-    return QStringLiteral("font-size: 26px; color: rgb(255,182,73); background: transparent; border: none;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Status Badges
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString badgeLive() {
-    return QStringLiteral("font-size: 14px; font-weight: 600; color: rgb(79,209,197); "
-                          "background: rgba(79,209,197,20); "
-                          "border: 1px solid rgba(79,209,197,100); "
-                          "border-radius: 999px; padding: 4px 12px;");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Training Placeholder
-// ─────────────────────────────────────────────────────────────────────────────
-inline QString trainingPlaceholderBox() {
-    return QStringLiteral("background: rgba(9, 14, 27, 200); "
-                          "border: 2px dashed rgba(79, 209, 197, 80); "
-                          "border-radius: 16px;");
-}
-inline QString trainingPlaceholderIcon() {
-    return QStringLiteral("font-size: 48px; color: rgba(79,209,197,120); background: transparent; border: none;");
-}
-inline QString trainingPlaceholderTitle() {
-    return QStringLiteral("font-size: 22px; font-weight: 600; color: rgb(79, 209, 197); background: transparent; border: none;");
-}
-inline QString trainingPlaceholderBody() {
-    return QStringLiteral("font-size: 16px; color: rgb(140, 147, 181); background: transparent; border: none;");
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// AppTheme.h  ─  ADD these methods to the existing class
-// ──────────────────────────────────────────────────────────────────────────────
-
-// Red/danger button  (Stop, Pause)
-static inline QString buttonDanger() {
-    return QStringLiteral(R"(
-        QPushButton {
-            background: qlineargradient(x1:0,y1:0,x2:1,y2:1,
-                stop:0 rgb(231,76,60), stop:1 rgb(192,57,43));
-            border: 1px solid rgb(231,76,60);
-            border-radius: 12px;
-            color: rgb(255,255,255);
-            font-weight: 600;
-            font-size: 14px;
-            padding: 10px 18px;
-            min-height: 40px;
-        }
-        QPushButton:hover  { background: rgb(231,76,60); }
-        QPushButton:pressed{ background: rgb(192,57,43); }
-    )");
-}
-
-// Left-side camera feed area
-static inline QString cameraView() {
-    return QStringLiteral(R"(
-        QLabel {
-            background: rgb(10,10,14);
-            color: rgba(255,255,255,120);
-            font-size: 16px;
-        }
-    )");
-}
-
-// Connected device icon text  (● Wi-Fi  /  ⬡ BLE)
-static inline QString connectedIcon() {
-    return QStringLiteral(R"(
-        QLabel {
-            color: rgb(0,206,201);
-            font-size: 14px;
-            font-weight: 700;
-            background: transparent;
-            padding: 0 4px;
-        }
-    )");
-}
-
-// Instruction guide step heading  "1. Start"
-static inline QString instructionStep() {
-    return QStringLiteral(R"(
-        QLabel {
-            color: rgb(255,255,255);
-            font-size: 13px;
-            font-weight: 700;
-            background: transparent;
-        }
-    )");
-}
-
-// Instruction bullet item
-static inline QString instructionItem() {
-    return QStringLiteral(R"(
-        QLabel {
-            color: rgba(255,255,255,170);
-            font-size: 12px;
-            background: transparent;
-        }
-    )");
-}
-
-// Shot grid header background row
-static inline QString gridHeader() {
-    return QStringLiteral(R"(
+inline const QString& globalStyle() {
+    static const QString s = QString(R"(
         QWidget {
-            background: rgba(255,255,255,18);
-            border-bottom: 1px solid rgba(255,255,255,25);
+            font-family: %1; font-size: %2px; color: %3;
+            background: transparent; border: none;
         }
-    )");
+        QLabel { background: transparent; border: none; }
+        QScrollBar:vertical   { background: %4; width: 6px;  border-radius: 3px; }
+        QScrollBar:horizontal { background: %4; height: 6px; border-radius: 3px; }
+        QScrollBar::handle:vertical, QScrollBar::handle:horizontal
+            { background: %5; border-radius: 3px; }
+        QScrollBar::handle:vertical:hover,
+        QScrollBar::handle:horizontal:hover { background: %6; }
+        QScrollBar::handle:vertical   { min-height: 20px; }
+        QScrollBar::handle:horizontal { min-width:  20px; }
+        QScrollBar::add-line:vertical,  QScrollBar::sub-line:vertical  { height: 0px; }
+        QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal { width: 0px;  }
+    )")
+    .arg(fontFamily()).arg(FontBody)
+    .arg(rgb(AppColors::TextPrimary))
+    .arg(rgba(AppColors::ScrollbarTrack()))
+    .arg(rgba(AppColors::ScrollbarThumb()))
+    .arg(rgba(AppColors::ScrollbarHover()));
+    return s;
 }
 
-// Shot grid header cell text
-static inline QString gridHeaderCell() {
-    return QStringLiteral(R"(
-        QLabel {
-            color: rgba(255,255,255,140);
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            background: transparent;
-        }
-    )");
+// ═════════════════════════════════════════════════════════════════════════════
+//  LAYER 3 — SEMANTIC STYLES  (static-cached, return const QString&)
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── Labels ────────────────────────────────────────────────────────────────────
+inline const QString& labelPrimary()      { static const QString s = textStyle(FontBody,     AppColors::TextPrimary);               return s; }
+inline const QString& labelSecondary()    { static const QString s = textStyle(FontBody,     AppColors::TextSecondary);             return s; }
+inline const QString& labelMuted()        { static const QString s = textStyle(FontSmall,    AppColors::TextMuted());               return s; }
+inline const QString& labelSubtle()       { static const QString s = textStyle(FontSmall,    AppColors::TextSubtle());              return s; }
+inline const QString& labelAccentCyan()   { static const QString s = textStyle(FontSmall,    AppColors::Accent());                  return s; }
+inline const QString& labelAccentOrange() { static const QString s = textStyle(FontSmall,    AppColors::Primary);                   return s; }
+
+// ── Headings ──────────────────────────────────────────────────────────────────
+inline const QString& sectionTitle()      { static const QString s = textStyle(FontSection,  AppColors::TextPrimary,  600);         return s; }
+inline const QString& sectionHint()       { static const QString s = textStyle(FontSmall,    AppColors::TextMuted());               return s; }
+inline const QString& pageTitle()         { static const QString s = textStyle(FontTitle,    AppColors::TextPrimary,  600);         return s; }
+inline const QString& heroTitle()         { static const QString s = textStyle(FontHero,     AppColors::TextPrimary,  600);         return s; }
+inline const QString& headerAppTitle()    { static const QString s = textStyle(FontHeader,   AppColors::TextPrimary,  700, "letter-spacing: 2px;"); return s; }
+inline const QString& headerAppSubtitle() { static const QString s = textStyle(FontTiny,     AppColors::TextSecondary);             return s; }
+inline const QString& laneLabel()         { static const QString s = textStyle(FontBody,     AppColors::TextPrimary);               return s; }
+inline const QString& laneSublabel()      { static const QString s = textStyle(FontSmall,    AppColors::TextSecondary);             return s; }
+inline const QString& stepLabel()         { static const QString s = textStyle(FontSmall,    AppColors::Primary, 600, "letter-spacing: 2px;"); return s; }
+
+// ── Device ────────────────────────────────────────────────────────────────────
+inline const QString& deviceName()    { static const QString s = textStyle(FontBody,  AppColors::TextPrimary,  600); return s; }
+inline const QString& deviceAddress() { static const QString s = textStyle(FontTiny,  AppColors::TextSubtle());      return s; }
+inline const QString& connectedIcon() {
+    static const QString s = wrap("QLabel",
+        textStyle(FontSmall, AppColors::Accent(), 700,
+                  QString("padding: 0 %1px;").arg(SpaceXS)));
+    return s;
 }
 
-// Shot grid data row
-static inline QString gridDataRow() {
-    return QStringLiteral(R"(
-        QWidget {
-            background: rgba(255,255,255,8);
-            border-bottom: 1px solid rgba(255,255,255,12);
-        }
-        QWidget:hover { background: rgba(255,255,255,14); }
-    )");
+// ── Summary rows ──────────────────────────────────────────────────────────────
+inline const QString& summaryRowLabel()     { static const QString s = textStyle(FontTiny, AppColors::TextMuted(),  400, "letter-spacing: 1px;"); return s; }
+inline const QString& summaryRowValue()     { static const QString s = textStyle(FontBody, AppColors::TextPrimary);   return s; }
+inline const QString& summaryRowHighlight() { static const QString s = textStyle(FontBody, AppColors::Primary);        return s; }
+
+// ── Help panel ────────────────────────────────────────────────────────────────
+inline const QString& helpTitle() { static const QString s = textStyle(FontSubtitle, AppColors::TextPrimary,   600); return s; }
+inline const QString& helpItem()  { static const QString s = textStyle(FontSmall,    AppColors::TextSecondary);       return s; }
+inline const QString& helpEmail() { static const QString s = textStyle(FontSmall,    AppColors::Accent());             return s; }
+
+// ── Misc labels ───────────────────────────────────────────────────────────────
+inline const QString& snackBarText()    { static const QString s = textStyle(FontSubtitle, AppColors::TextPrimary);   return s; }
+inline const QString& warningIcon()     { static const QString s = textStyle(FontTitle,    AppColors::Primary);        return s; }
+inline const QString& loaderDots()      { static const QString s = textStyle(FontSection,  AppColors::AccentGlow(),  400, "letter-spacing: 6px;"); return s; }
+inline const QString& loaderText()      { static const QString s = textStyle(FontSmall,    AppColors::TextSubtle(),  400, "margin-top: 6px;");     return s; }
+inline const QString& emptyIcon()       { static const QString s = textStyle(FontTitle,    AppColors::withAlpha(AppColors::TextSubtle(), 120));     return s; }
+inline const QString& emptyText()       { static const QString s = textStyle(FontSmall,    AppColors::TextSubtle(),  400, "margin-top: 6px;");     return s; }
+inline const QString& scoreValue()      { static const QString s = wrap("QLabel", textStyle(FontHero,     AppColors::TextPrimary, 700)); return s; }
+inline const QString& gradeLabel()      { static const QString s = wrap("QLabel", textStyle(FontHero,     AppColors::Primary,     600)); return s; }
+inline const QString& instructionStep() { static const QString s = wrap("QLabel", textStyle(FontBody,     AppColors::TextPrimary, 700)); return s; }
+inline const QString& instructionItem() { static const QString s = wrap("QLabel", textStyle(FontSmall,    AppColors::withAlpha(AppColors::TextPrimary, 170))); return s; }
+inline const QString& gridHeaderCell()  { static const QString s = wrap("QLabel", textStyle(FontTiny,     AppColors::withAlpha(AppColors::TextPrimary, 140), 700, "letter-spacing: 1px;")); return s; }
+inline const QString& gridDataCell()    { static const QString s = wrap("QLabel", textStyle(FontBody,     AppColors::TextPrimary)); return s; }
+inline const QString& qrScanLabel()     { static const QString s = textStyle(FontTiny, AppColors::TextSecondary, 400, "letter-spacing: 2px;"); return s; }
+inline const QString& trainingPlaceholderTitle() { static const QString s = textStyle(FontSection,    AppColors::Accent(),    600); return s; }
+inline const QString& trainingPlaceholderBody()  { static const QString s = textStyle(FontSubtitle,   AppColors::TextMuted());      return s; }
+inline const QString& trainingPlaceholderIcon()  { static const QString s = textStyle(FontHero + 10,  AppColors::withAlpha(AppColors::Accent(), 120)); return s; }
+inline const QString& customButtonMain() { static const QString s = textStyle(FontBody,  AppColors::TextPrimary,  600); return s; }
+inline const QString& customButtonSub()  { static const QString s = textStyle(FontTiny,  AppColors::TextMuted());        return s; }
+inline const QString& pillLabelActive()  { static const QString s = textStyle(FontSmall, AppColors::PrimaryLight()); return s; }
+inline const QString& pillLabelInactive(){ static const QString s = textStyle(FontSmall, AppColors::TextSecondary);   return s; }
+inline const QString& cameraView() {
+    static const QString s = QString("QLabel { background: %1; %2 }")
+        .arg(rgb(AppColors::CameraBg()))
+        .arg(textStyle(FontSubtitle, AppColors::withAlpha(AppColors::TextPrimary, 120)));
+    return s;
 }
 
-// Shot grid data cell text
-static inline QString gridDataCell() {
-    return QStringLiteral(R"(
-        QLabel {
-            color: rgb(255,255,255);
-            font-size: 13px;
-            background: transparent;
-        }
-    )");
+// ── Badge ─────────────────────────────────────────────────────────────────────
+inline const QString& badge() {
+    static const QString s = QString("%1 padding: %2px %3px; border-radius: %4px; border: 1px solid %5;")
+        .arg(textStyle(FontTiny, AppColors::TextMuted()))
+        .arg(SpaceXS).arg(SpaceM).arg(RadiusPill)
+        .arg(rgba(AppColors::BorderMedium()));
+    return s;
+}
+inline const QString& badgeLive() {
+    static const QString s = QString(
+        "font-size: %1px; font-weight: 600; color: %2; background: %3; "
+        "border: 1px solid %4; border-radius: %5px; padding: %6px %7px;")
+        .arg(FontTiny).arg(rgb(AppColors::Accent()))
+        .arg(rgba(AppColors::Accent(), 20)).arg(rgba(AppColors::Accent(), 100))
+        .arg(RadiusPill).arg(SpaceXS).arg(SpaceM);
+    return s;
 }
 
-// Total score box
-static inline QString scorePanel() {
-    return QStringLiteral(R"(
-        QWidget {
-            background: rgba(139,90,43,0.45);
-            border-top: 1px solid rgba(255,182,73,50);
-        }
-    )");
+// ── Buttons ───────────────────────────────────────────────────────────────────
+inline const QString& buttonPrimary() {
+    static const QString s = buttonStyle(
+        AppColors::Primary, AppColors::PrimaryDark(),
+        AppColors::Primary, AppColors::TextOnPrimary(),
+        FontBody, 52, RadiusL,
+        QString("background: %1; border: 1px solid %2; color: %3;")
+            .arg(rgba(AppColors::Primary, 60))
+            .arg(rgba(AppColors::Primary, 40))
+            .arg(rgba(AppColors::TextOnPrimary(), 100)));
+    return s;
+}
+inline const QString& buttonGhost() {
+    static const QString s = outlineButtonStyle(
+        AppColors::BorderDashed(), AppColors::TextSecondary,
+        FontBody, 52, {}, "dashed");
+    return s;
+}
+inline const QString& buttonDanger() {
+    static const QString s = buttonStyle(
+        AppColors::Error, AppColors::ErrorDark(),
+        AppColors::Error, AppColors::TextPrimary,
+        FontSmall, 44);
+    return s;
+}
+inline const QString& refreshButton() {
+    static const QString s = outlineButtonStyle(
+        AppColors::AccentBorder(), AppColors::Accent(),
+        FontBody, 36, rgba(AppColors::Accent(), 26));
+    return s;
+}
+inline const QString& connectButton() {
+    static const QString s = outlineButtonStyle(
+        AppColors::Accent(), AppColors::Accent(),
+        FontSmall, 36, rgba(AppColors::Accent(), 26));
+    return s;
+}
+inline const QString& disconnectButton() {
+    static const QString s = buttonStyle(
+        AppColors::Accent(), AppColors::AccentHover(),
+        AppColors::Accent(), AppColors::TextOnAccent(),
+        FontSmall, 36, RadiusM);
+    return s;
 }
 
-// Big score number
-static inline QString scoreValue() {
-    return QStringLiteral(R"(
-        QLabel {
-            color: rgb(255,255,255);
-            font-size: 36px;
-            font-weight: 700;
-            background: transparent;
-        }
-    )");
+// Grid selection buttons — all 3 states use radialButtonStyle()
+inline const QString& buttonNormal() {
+    static const QString s = radialButtonStyle(
+        AppColors::withAlpha(AppColors::TextPrimary, 15),
+        AppColors::ButtonBgNormal(),
+        AppColors::BorderMedium());
+    return s;
+}
+inline const QString& buttonHover() {
+    static const QString s = radialButtonStyle(
+        AppColors::withAlpha(AppColors::TextPrimary, 25),
+        AppColors::ButtonBgNormal(),
+        AppColors::withAlpha(AppColors::TextPrimary, 50));
+    return s;
+}
+inline const QString& buttonSelected() {
+    // selected: top-center radial (cx:0.5, cy:0), tighter radius, 2px border
+    static const QString s = radialButtonStyle(
+        AppColors::AccentBg(),
+        AppColors::ButtonBgNormal(),
+        AppColors::Accent(), 2,
+        0.5, 0.0, 1.2, 0.5, 0.0);
+    return s;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH: Add these methods to AppTheme.h inside the AppTheme class body.
-// After adding, widget files will have ZERO hardcoded colors/fonts.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Containers ────────────────────────────────────────────────────────────────
+inline const QString& consoleContainer() { static const QString s = boxStyle(AppColors::Surface,                                   AppColors::Border(),       RadiusXXL); return s; }
+inline const QString& panel()            { static const QString s = boxStyle(AppColors::SurfaceDeep(),                             AppColors::Border(),       RadiusXL);  return s; }
+inline const QString& offlinePanel()     { return panel(); }
+inline const QString& deviceCard()       { static const QString s = boxStyle(AppColors::SurfaceCard(),                             AppColors::BorderStrong(), RadiusM);   return s; }
+inline const QString& summaryBox()       { static const QString s = boxStyle(AppColors::withAlpha(AppColors::Surface, 242),        AppColors::Border(),       RadiusM);   return s; }
+inline const QString& connectedCard() {
+    static const QString s = QString("QWidget { background: %1; border: 1px solid %2; border-radius: %3px; }")
+        .arg(rgba(AppColors::SurfaceCard())).arg(rgb(AppColors::Accent())).arg(RadiusM);
+    return s;
+}
+// helpPanel — margin keeps it off the side-panel edge (same visual breathing as scanPanel area)
+inline const QString& helpPanel() {
+    static const QString s = QString("QWidget { background: %1; border: 1px solid %2; "
+                                     "border-radius: %3px; margin: 0 %4px %4px %4px; }")
+        .arg(rgba(AppColors::withAlpha(AppColors::SurfaceDeep(), 153)))
+        .arg(rgba(AppColors::BorderStrong()))
+        .arg(RadiusM).arg(SpaceS);
+    return s;
+}
+inline const QString& headerBar() {
+    static const QString s = QString(
+        "QWidget { background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 %1, stop:1 %2); "
+        "border: none; border-bottom: 1px solid %3; }")
+        .arg(rgba(AppColors::HeaderBg()))
+        .arg(rgba(AppColors::HeaderBgAlt()))
+        .arg(rgba(AppColors::HeaderBorder()));
+    return s;
+}
+inline const QString& sidePanel() {
+    static const QString s = QString("background: transparent; border-right: 1px solid %1;")
+        .arg(rgba(AppColors::BorderStrong()));
+    return s;
+}
+inline const QString& scrollArea()  { static const QString s = QStringLiteral("QScrollArea { border: none; background: transparent; }"); return s; }
+inline const QString& transparent() { static const QString s = QStringLiteral("background: transparent; border: none;"); return s; }
+inline const QString& divider()     { static const QString s = QString("background: %1; height: 1px; border: none;").arg(rgba(AppColors::DividerColor())); return s; }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-// PATCH: Add these methods to AppTheme.h inside the AppTheme class body.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Table ─────────────────────────────────────────────────────────────────────
+inline const QString& tablePanel()    { static const QString s = QString("QWidget { background: %1; border: 1px solid %2; border-radius: 0px; }").arg(rgb(AppColors::SurfaceDeep())).arg(rgba(AppColors::Border())); return s; }
+inline const QString& columnDivider() { static const QString s = QString("QWidget { background: %1; border: none; }").arg(rgba(AppColors::Border())); return s; }
+inline const QString& gridHeader()    { static const QString s = QString("QWidget { background: %1; border-bottom: 1px solid %2; }").arg(rgba(AppColors::TextPrimary, 18)).arg(rgba(AppColors::TextPrimary, 25)); return s; }
+inline const QString& gridDataRow()   { static const QString s = QString("QWidget { background: %1; border-bottom: 1px solid %2; } QWidget:hover { background: %3; }").arg(rgba(AppColors::TextPrimary, 8)).arg(rgba(AppColors::TextPrimary, 12)).arg(rgba(AppColors::TextPrimary, 14)); return s; }
+inline const QString& scorePanel()    { static const QString s = QString("QWidget { background: %1; border-top: 1px solid %2; }").arg(rgba(AppColors::Primary, 40)).arg(rgba(AppColors::Primary, 50)); return s; }
 
-    // Table panel: straight corners for data tables
-    static QString tablePanel() {
-        return "QWidget { background: rgba(9,14,27,255); "
-               "border: 1px solid rgba(255,255,255,20); "
-               "border-radius: 0px; }";
-    }
+// ── Lightbox / Album ──────────────────────────────────────────────────────────
+inline const QString& lightboxBg()    { static const QString s = QString("QWidget { background: %1; border: none; }").arg(rgba(AppColors::Background, 245)); return s; }
+inline const QString& captionOverlay(){ static const QString s = QString("QWidget { background: %1; border: none; border-radius: %2px; }").arg(rgba(AppColors::SurfaceOverlay())).arg(RadiusS); return s; }
+inline const QString& navArrowButton(){
+    static const QString s = QString(
+        "QPushButton { background: %1; border: none; border-radius: %2px; "
+        "color: %3; font-size: %4px; font-weight: 700; } "
+        "QPushButton:hover   { background: %5; } "
+        "QPushButton:pressed { background: %6; }")
+        .arg(rgb(AppColors::Primary)).arg(RadiusM)
+        .arg(rgb(AppColors::TextOnPrimary())).arg(FontHero)
+        .arg(rgb(AppColors::PrimaryLight()))
+        .arg(rgb(AppColors::PrimaryDark()));
+    return s;
+}
 
-    // Vertical column divider (1px overlay QWidget inside tables)
-    static QString columnDivider() {
-        return "QWidget { background: rgba(255,255,255,20); border: none; }";
-    }
+// ── Misc containers ───────────────────────────────────────────────────────────
+inline const QString& trainingPlaceholderBox() {
+    static const QString s = QString("background: %1; border: 2px dashed %2; border-radius: %3px;")
+        .arg(rgba(AppColors::SurfaceDeep(), 200))
+        .arg(rgba(AppColors::Accent(), 80)).arg(RadiusXL);
+    return s;
+}
+inline const QString& qrScanZone() {
+    static const QString s = QString(
+        "background: qradialgradient(cx:0.5,cy:0.5,radius:0.8,fx:0.5,fy:0.5, "
+        "stop:0 %1, stop:1 %2); border: 1px dashed %3; border-radius: %4px;")
+        .arg(rgba(AppColors::TextPrimary, 13))
+        .arg(rgba(AppColors::Background,  242))
+        .arg(rgba(AppColors::TextPrimary,  46))
+        .arg(RadiusL);
+    return s;
+}
 
-    // Large grade/rating label: 34px bold orange, transparent bg
-    static QString gradeLabel() {
-        return "QLabel { color: #F5A623; font-size: 34px; font-weight: 600; "
-               "background: transparent; border: none; }";
-    }
+// ── Pill ──────────────────────────────────────────────────────────────────────
+inline const QString& pillActive()      { static const QString s = QString("PillWidget { background: %1; border: 1px solid %2; border-radius: %3px; }").arg(rgba(AppColors::PrimaryBg())).arg(rgb(AppColors::Primary)).arg(RadiusPill); return s; }
+inline const QString& pillInactive()    { static const QString s = QString("PillWidget { background: transparent; border: 1px solid %1; border-radius: %2px; }").arg(rgba(AppColors::DividerColor())).arg(RadiusPill); return s; }
+inline const QString& pillDotActive()   { static const QString s = QString("background: %1; border-radius: 4px; border: none;").arg(rgb(AppColors::Primary));        return s; }
+inline const QString& pillDotInactive() { static const QString s = QString("background: %1; border-radius: 4px; border: none;").arg(rgb(AppColors::PillInactive())); return s; }
 
-    // Lightbox background (darker than panel)
-    static QString lightboxBg() {
-        return "QWidget { background: rgba(5,8,20,245); border: none; }";
-    }
-
-    // Album card caption — inset from card edges, rounded, dark enough for white text
-    static QString captionOverlay() {
-        return "QWidget { background: rgba(5,8,20,210); border: none; "
-               "border-radius: 6px; }";
-    }
-
-
-    // Lightbox nav arrow button — large font so arrow is clearly visible
-    static QString navArrowButton() {
-        return "QPushButton { background: #F5A623; border: none; border-radius: 8px; "
-               "color: #0A0F1A; font-size: 28px; font-weight: 700; }"
-               "QPushButton:hover { background: #FFB84D; }"
-               "QPushButton:pressed { background: #E09500; }";
-    }
-
-
-
-
-
+// ── SnackBar — QColor parameter (type-safe) ───────────────────────────────────
+inline QString snackBar(const QColor& borderColor) {
+    return QString("QWidget { background: %1; border: 1px solid %2; border-radius: %3px; }")
+        .arg(rgb(AppColors::Surface)).arg(rgba(borderColor)).arg(RadiusL);
+}
 
 } // namespace AppTheme
