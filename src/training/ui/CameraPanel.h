@@ -6,14 +6,12 @@
 #include "common/ScanPanel.h"
 #include "training/engine/dart_system.h"
 
-/**
- * @brief Camera device discovery panel.
- * Scan triggers only when widget becomes visible (showEvent),
- * NOT at construction time — avoids running on app startup.
- */
 class CameraPanel : public QWidget {
     Q_OBJECT
 public:
+    // Change this index to target a different system camera in the future.
+    static constexpr int kAutoConnectIndex = 1;
+
     explicit CameraPanel(QWidget* parent = nullptr);
 
     int  selectedCameraIndex() const { return m_selectedIndex; }
@@ -27,11 +25,10 @@ protected:
 
 private:
     void scan();
-    void onConnectClicked(const QString& id);
-    void onDisconnectClicked();
+    void autoConnect(int cameraIndex, const QString& name);
 
     ScanPanel* m_scanPanel;
-    int        m_selectedIndex  = -1;
-    bool       m_connected      = false;
-    bool       m_firstShow      = true;
+    int        m_selectedIndex = -1;
+    bool       m_connected     = false;
+    bool       m_firstShow     = true;
 };

@@ -1,4 +1,3 @@
-// src/training/ui/CameraPanel.cpp
 #include "CameraPanel.h"
 #include "common/AppTheme.h"
 #include "common/SnackBar.h"
@@ -12,9 +11,7 @@ CameraPanel::CameraPanel(QWidget* parent) : QWidget(parent) {
     layout->addWidget(m_scanPanel, 1);
     setLayout(layout);
 
-    connect(m_scanPanel, &ScanPanel::refreshClicked,    this, &CameraPanel::scan);
-    connect(m_scanPanel, &ScanPanel::connectClicked,    this, &CameraPanel::onConnectClicked);
-    connect(m_scanPanel, &ScanPanel::disconnectClicked, this, &CameraPanel::onDisconnectClicked);
+    connect(m_scanPanel, &ScanPanel::refreshClicked, this, &CameraPanel::scan);
 }
 
 void CameraPanel::showEvent(QShowEvent* event) {
@@ -27,49 +24,36 @@ void CameraPanel::showEvent(QShowEvent* event) {
 
 void CameraPanel::scan() {
     if (m_connected) return;
+
     m_scanPanel->clearDevices();
     m_scanPanel->startScanning();
 
     QTimer::singleShot(800, this, [this]() {
         const auto cameras = get_available_cameras();
-        m_scanPanel->stopScanning();
-        for (const auto& cam : cameras) {
-            const QString id  = QString::number(cam.index);
-            const QString sub = QString("%1 \u00D7 %2").arg(cam.width).arg(cam.height);
-            m_scanPanel->addDevice(id, QString::fromStdString(cam.name), sub);
+
+        if (cameras.empty()) {
+            m_scanPanel->stopScanning();
+            m_scanPanel->setEmptyMessage(
+                "No camera found.\nKindly connect a camera and click refresh.");
+            return;
         }
+
+        const int pos        = qBound(1, kAutoConnectIndex, (int)cameras.size()) - 1;
+        int       targetIdx  = cameras[pos].index;
+        QString   targetName = QString::fromStdString(cameras[pos].name);
+        autoConnect(targetIdx, targetName);
     });
 }
 
-void CameraPanel::onConnectClicked(const QString& id) {
-    SnackBar::show(window(), "Connecting camera\u2026", SnackBar::Info);
-    m_scanPanel->showConnecting();
+void CameraPanel::autoConnect(int cameraIndex, const QString& name) {
+    m_scanPanel->showConnecting("Auto-connecting\u2026");
 
-    QTimer::singleShot(600, this, [this, id]() {
-        m_selectedIndex = id.toInt();
-        m_connected = true;
-
-        const auto cameras = get_available_cameras();
-        QString name = QString("Camera %1").arg(id);
-        for (const auto& cam : cameras)
-            if (cam.index == m_selectedIndex)
-                name = QString::fromStdString(cam.name);
-
-        m_scanPanel->showConnected(name);
+    QTimer::singleShot(600, this, [this, cameraIndex, name]() {
+        m_selectedIndex = cameraIndex;
+        m_connected     = true;
+        m_scanPanel->showConnected(name, false);
         SnackBar::show(window(),
             QString("\u2713 Camera connected: %1").arg(name), SnackBar::Success);
         emit connectionChanged(true, m_selectedIndex);
-    });
-}
-
-void CameraPanel::onDisconnectClicked() {
-    m_scanPanel->showConnecting("Disconnecting\u2026");
-    QTimer::singleShot(400, this, [this]() {
-        m_connected = false;
-        m_selectedIndex = -1;
-        m_scanPanel->showDisconnected();
-        SnackBar::show(window(), "Camera disconnected", SnackBar::Info);
-        emit connectionChanged(false, -1);
-        scan();
     });
 }

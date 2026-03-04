@@ -12,7 +12,6 @@ void ScanPanel::buildUI(const QString& title) {
     layout->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
     layout->setSpacing(ItemGap);
 
-    // ── Header ────────────────────────────────────────────────────────────
     auto* headerRow = new QWidget(this);
     auto* headerLayout = new QHBoxLayout(headerRow);
     headerLayout->setContentsMargins(0, 0, 0, 0);
@@ -20,9 +19,9 @@ void ScanPanel::buildUI(const QString& title) {
 
     auto* titleLabel = new QLabel(title, headerRow);
     titleLabel->setStyleSheet(AppTheme::sectionTitle());
-    titleLabel->setWordWrap(true);   // wraps "Bluetooth Connections" on narrow sidebar
+    titleLabel->setWordWrap(true);
 
-    m_refreshBtn = new QPushButton("\u21BB", headerRow);   // ↻
+    m_refreshBtn = new QPushButton("\u21BB", headerRow);
     m_refreshBtn->setStyleSheet(AppTheme::iconButton());
     m_refreshBtn->setCursor(Qt::PointingHandCursor);
     m_refreshBtn->setFixedSize(IconBtnSz, IconBtnSz);
@@ -32,7 +31,6 @@ void ScanPanel::buildUI(const QString& title) {
     headerLayout->addWidget(m_refreshBtn);
     headerRow->setLayout(headerLayout);
 
-    // ── Device scroll area ────────────────────────────────────────────────
     m_devicesScroll = new QScrollArea(this);
     m_devicesScroll->setWidgetResizable(true);
     m_devicesScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -43,7 +41,7 @@ void ScanPanel::buildUI(const QString& title) {
     m_devicesLayout->setContentsMargins(0, 0, 0, 0);
     m_devicesLayout->setSpacing(ItemGap);
 
-    // ── Scan loader ───────────────────────────────────────────────────────
+    // Scan loader
     m_scanLoader = new QWidget(m_devicesContainer);
     m_scanLoader->setStyleSheet(AppTheme::transparent());
     auto* scanLayout = new QVBoxLayout(m_scanLoader);
@@ -62,7 +60,7 @@ void ScanPanel::buildUI(const QString& title) {
     m_scanLoader->setLayout(scanLayout);
     m_scanLoader->hide();
 
-    // ── Connect loader ────────────────────────────────────────────────────
+    // Connect loader
     m_connectLoader = new QWidget(m_devicesContainer);
     m_connectLoader->setStyleSheet(AppTheme::transparent());
     auto* connLayout = new QVBoxLayout(m_connectLoader);
@@ -82,7 +80,7 @@ void ScanPanel::buildUI(const QString& title) {
     m_connectLoader->setLayout(connLayout);
     m_connectLoader->hide();
 
-    // ── Empty state ───────────────────────────────────────────────────────
+    // Empty state
     m_emptyState = new QWidget(m_devicesContainer);
     m_emptyState->setStyleSheet(AppTheme::transparent());
     auto* emptyLayout = new QVBoxLayout(m_emptyState);
@@ -92,11 +90,12 @@ void ScanPanel::buildUI(const QString& title) {
     auto* emptyIcon = new QLabel("\u25CC", m_emptyState);
     emptyIcon->setStyleSheet(AppTheme::emptyIcon());
     emptyIcon->setAlignment(Qt::AlignCenter);
-    auto* emptyText = new QLabel("Nothing found", m_emptyState);
-    emptyText->setStyleSheet(AppTheme::emptyText());
-    emptyText->setAlignment(Qt::AlignCenter);
+    m_emptyText = new QLabel("Nothing found", m_emptyState);
+    m_emptyText->setStyleSheet(AppTheme::emptyText());
+    m_emptyText->setAlignment(Qt::AlignCenter);
+    m_emptyText->setWordWrap(true);
     emptyLayout->addWidget(emptyIcon);
-    emptyLayout->addWidget(emptyText);
+    emptyLayout->addWidget(m_emptyText);
     m_emptyState->setLayout(emptyLayout);
     m_emptyState->hide();
 
@@ -107,7 +106,6 @@ void ScanPanel::buildUI(const QString& title) {
     m_devicesContainer->setLayout(m_devicesLayout);
     m_devicesScroll->setWidget(m_devicesContainer);
 
-    // ── Dot animator ──────────────────────────────────────────────────────
     m_dotTimer = new QTimer(this);
     m_dotTimer->setInterval(400);
     connect(m_dotTimer, &QTimer::timeout, this, &ScanPanel::tickDots);
@@ -125,6 +123,10 @@ void ScanPanel::tickDots() {
                                     "\u25CE \u25CE \u25C9"};
     if (auto* w = findChild<QLabel*>("scanDots")) w->setText(frames[m_dotCount]);
     if (auto* w = findChild<QLabel*>("connDots")) w->setText(frames[m_dotCount]);
+}
+
+void ScanPanel::setEmptyMessage(const QString& msg) {
+    if (m_emptyText) m_emptyText->setText(msg);
 }
 
 void ScanPanel::startScanning() {
@@ -173,7 +175,7 @@ void ScanPanel::addDevice(const QString& id, const QString& primary, const QStri
 
     auto* connectBtn = new QPushButton("Connect", card);
     connectBtn->setStyleSheet(AppTheme::connectButton());
-    connectBtn->setMinimumWidth(80);    // never clips on any reasonable sidebar width
+    connectBtn->setMinimumWidth(80);
     connectBtn->setCursor(Qt::PointingHandCursor);
     connect(connectBtn, &QPushButton::clicked, [this, id]() { emit connectClicked(id); });
 
@@ -205,7 +207,7 @@ void ScanPanel::showConnecting(const QString& msg) {
     m_dotTimer->start();
 }
 
-void ScanPanel::showConnected(const QString& name) {
+void ScanPanel::showConnected(const QString& name, bool allowDisconnect) {
     m_connectLoader->hide();
     m_dotTimer->stop();
     clearDevices();
@@ -222,16 +224,18 @@ void ScanPanel::showConnected(const QString& name) {
     nameLabel->setStyleSheet(AppTheme::deviceName());
     nameLabel->setWordWrap(true);
 
-    auto* disconnectBtn = new QPushButton("Disconnect", card);
-    disconnectBtn->setStyleSheet(AppTheme::disconnectButton());
-    disconnectBtn->setCursor(Qt::PointingHandCursor);
-    connect(disconnectBtn, &QPushButton::clicked, this, &ScanPanel::disconnectClicked);
-
     cardLayout->addWidget(nameLabel);
     cardLayout->addStretch();
-    cardLayout->addWidget(disconnectBtn);
-    card->setLayout(cardLayout);
 
+    if (allowDisconnect) {
+        auto* disconnectBtn = new QPushButton("Disconnect", card);
+        disconnectBtn->setStyleSheet(AppTheme::disconnectButton());
+        disconnectBtn->setCursor(Qt::PointingHandCursor);
+        connect(disconnectBtn, &QPushButton::clicked, this, &ScanPanel::disconnectClicked);
+        cardLayout->addWidget(disconnectBtn);
+    }
+
+    card->setLayout(cardLayout);
     m_devicesLayout->insertWidget(0, card);
     m_deviceWidgets["__connected__"] = card;
 }

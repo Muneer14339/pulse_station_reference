@@ -12,13 +12,13 @@ find_package(Qt5 REQUIRED COMPONENTS Core Widgets Bluetooth DBus)
 add_executable(${PROJECT_NAME}
     main.cpp
 
-    # ── Common (shared utilities / theme) ─────────────────────────────────
+    # ── Common ────────────────────────────────────────────────────────────
     src/common/CustomButton.cpp
     src/common/PillWidget.cpp
     src/common/SnackBar.cpp
     src/common/ScanPanel.cpp
 
-    # ── Core (business logic / state) ────────────────────────────────────
+    # ── Core ──────────────────────────────────────────────────────────────
     src/core/SessionState.cpp
     src/core/DataModels.cpp
     src/core/BluetoothManager.cpp
@@ -27,7 +27,7 @@ add_executable(${PROJECT_NAME}
     src/training/data/ReviewDataTypes.cpp
 
     # ── UI — Shared Widgets ───────────────────────────────────────────────
-    src/ui/widgets/ShotGridWidget.cpp        # shared: TrainingScreen + ShotCountTab
+    src/ui/widgets/ShotGridWidget.cpp
 
     # ── UI — Main Shell ───────────────────────────────────────────────────
     src/ui/MainWindow.cpp
@@ -39,7 +39,7 @@ add_executable(${PROJECT_NAME}
     src/ui/widgets/ButtonGrid.cpp
     src/ui/widgets/SummaryBox.cpp
 
-    # ── UI — Session Review Screen (4 tabs) ───────────────────────────────
+    # ── UI — Session Review Screen ────────────────────────────────────────
     src/ui/review/ReviewPanel.cpp
     src/ui/review/ShotCountTab.cpp
     src/ui/review/SessionSummaryTab.cpp
@@ -49,7 +49,6 @@ add_executable(${PROJECT_NAME}
     src/ui/review/AlbumLightboxScreen.cpp
 
     # ── Training UI ───────────────────────────────────────────────────────
-    src/training/ui/TrainingPlaceholder.cpp
     src/training/ui/TrainingScreen.cpp
     src/training/ui/CameraPanel.cpp
     src/training/ui/TrainingWidget.cpp

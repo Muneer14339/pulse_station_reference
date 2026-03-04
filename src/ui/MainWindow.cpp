@@ -1,4 +1,3 @@
-// src/ui/MainWindow.cpp
 #include "MainWindow.h"
 #include "common/AppColors.h"
 #include "common/AppTheme.h"
@@ -18,7 +17,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_state     = new SessionState(this);
     m_btManager = new BluetoothManager(this);
 
-    // ── Root layout ───────────────────────────────────────────────────────
     auto* centralWidget = new QWidget(this);
     auto* rootLayout    = new QVBoxLayout(centralWidget);
     rootLayout->setContentsMargins(ContentV, ContentV, ContentV, ContentV);
@@ -37,15 +35,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     m_consoleWidget       = new ConsoleWidget(m_state, m_btManager, m_stack);
     m_reviewScreen        = new ReviewScreen(m_state, m_stack);
-    m_trainingPlaceholder = new TrainingPlaceholder(m_state, m_stack);
     m_trainingScreen      = new TrainingScreen(m_state, m_stack);
     m_sessionReviewScreen = new SessionReviewScreen(m_stack);
 
     m_stack->addWidget(m_consoleWidget);        // 0
     m_stack->addWidget(m_reviewScreen);         // 1
-    m_stack->addWidget(m_trainingPlaceholder);  // 2
-    m_stack->addWidget(m_trainingScreen);       // 3
-    m_stack->addWidget(m_sessionReviewScreen);  // 4
+    m_stack->addWidget(m_trainingScreen);       // 2
+    m_stack->addWidget(m_sessionReviewScreen);  // 3
 
     containerLayout->addWidget(m_stack);
     consoleContainer->setLayout(containerLayout);
@@ -60,20 +56,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_reviewScreen, &ReviewScreen::backRequested,
             this, &MainWindow::showConsole);
     connect(m_reviewScreen, &ReviewScreen::confirmRequested,
-            this, &MainWindow::showTraining);
-
-    connect(m_trainingPlaceholder, &TrainingPlaceholder::newSessionRequested,
-            this, &MainWindow::showConsole);
-    connect(m_trainingPlaceholder, &TrainingPlaceholder::sessionStarted,
             this, &MainWindow::showActiveSession);
 
     connect(m_trainingScreen, &TrainingScreen::sessionEnded,
             this, &MainWindow::showSessionReview);
 
     connect(m_sessionReviewScreen, &SessionReviewScreen::saveRequested,
-            this, &MainWindow::showTraining);
+            this, &MainWindow::showConsole);
     connect(m_sessionReviewScreen, &SessionReviewScreen::discardRequested,
-            this, &MainWindow::showTraining);
+            this, &MainWindow::showConsole);
 }
 
 void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
@@ -145,11 +136,6 @@ void MainWindow::showConsole() {
 void MainWindow::showReview() {
     m_reviewScreen->updateReview();
     m_stack->setCurrentWidget(m_reviewScreen);
-}
-
-void MainWindow::showTraining() {
-    m_trainingPlaceholder->refresh();
-    m_stack->setCurrentWidget(m_trainingPlaceholder);
 }
 
 void MainWindow::showActiveSession() {
