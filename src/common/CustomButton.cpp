@@ -4,13 +4,17 @@
 CustomButton::CustomButton(const QString& mainText, const QString& subText, QWidget* parent)
     : QPushButton(parent)
 {
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    using namespace AppTheme;
+
+    // Expanding horizontal so buttons fill grid columns equally.
+    // Minimum vertical so the button grows to fit wrapped text — never clips content.
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     setCursor(Qt::PointingHandCursor);
-    setMinimumHeight(70);
+    setMinimumHeight(GridButtonHeight);
 
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(14, 14, 14, 14);
-    layout->setSpacing(4);
+    layout->setContentsMargins(CardPadH, CardPadV, CardPadH, CardPadV);
+    layout->setSpacing(RowPad);
 
     m_mainLabel = new QLabel(mainText, this);
     m_mainLabel->setStyleSheet(AppTheme::customButtonMain());

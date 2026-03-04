@@ -38,14 +38,18 @@ static QWidget* makeTopBar(bool showDownload, QObject* ctx,
                             const std::function<void()>& leftAction,
                             const std::function<void()>& downloadAction = {})
 {
+    using namespace AppTheme;
+
     auto* bar = new QWidget;
     bar->setStyleSheet(AppTheme::transparent());
     auto* l = new QHBoxLayout(bar);
-    l->setContentsMargins(18, 16, 18, 12);
+    l->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, ItemGap);
+    l->setSpacing(InlineGap);
 
-    auto* btn = new QPushButton(showDownload ? "⬇" : "←", bar);
-    btn->setStyleSheet(AppTheme::refreshButton());
-    btn->setFixedSize(36, 36);
+    // Left action button (back ← or download ⬇)
+    auto* btn = new QPushButton(showDownload ? "\u2B07" : "\u2190", bar);
+    btn->setStyleSheet(AppTheme::iconButton());
+    btn->setFixedSize(IconBtnSz, IconBtnSz);
     btn->setCursor(Qt::PointingHandCursor);
     if (showDownload)
         QObject::connect(btn, &QPushButton::clicked, ctx,
@@ -56,22 +60,24 @@ static QWidget* makeTopBar(bool showDownload, QObject* ctx,
     l->addWidget(btn);
     l->addStretch();
 
-    for (const char* txt : {"● Wi-Fi", "⬡  BLE"}) {
+    for (const char* txt : {"\u25CF Wi-Fi", "\u2B21  BLE"}) {
         auto* lbl = new QLabel(txt, bar);
         lbl->setStyleSheet(AppTheme::connectedIcon());
         l->addWidget(lbl);
-        if (txt == std::string("● Wi-Fi")) l->addSpacing(14);
+        if (txt == std::string("\u25CF Wi-Fi")) l->addSpacing(ItemGap);
     }
     bar->setLayout(l);
     return bar;
 }
 
 static QWidget* makeStep(QWidget* parent, const GuideStep& step) {
+    using namespace AppTheme;
+
     auto* block = new QWidget(parent);
     block->setStyleSheet(AppTheme::transparent());
     auto* vb = new QVBoxLayout(block);
-    vb->setContentsMargins(0, 0, 0, 8);
-    vb->setSpacing(6);
+    vb->setContentsMargins(0, 0, 0, ItemGap);
+    vb->setSpacing(InlineGap);
     auto* heading = new QLabel(step.title, block);
     heading->setStyleSheet(AppTheme::helpTitle());
     vb->addWidget(heading);
@@ -106,6 +112,8 @@ void TrainingScreen::buildUI() {
 }
 
 QWidget* TrainingScreen::buildGuidePanel() {
+    using namespace AppTheme;
+
     auto* panel = new QWidget(this);
     panel->setStyleSheet(AppTheme::sidePanel());
     auto* vb = new QVBoxLayout(panel);
@@ -121,14 +129,17 @@ QWidget* TrainingScreen::buildGuidePanel() {
     auto* content = new QWidget;
     content->setStyleSheet(AppTheme::transparent());
     auto* cl = new QVBoxLayout(content);
-    cl->setContentsMargins(18, 16, 18, 16);
-    cl->setSpacing(16);
+    cl->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
+    cl->setSpacing(SectionGap);
+
     auto* guideTitle = new QLabel("Realtime Scoring Guide", content);
     guideTitle->setStyleSheet(AppTheme::sectionTitle());
     guideTitle->setAlignment(Qt::AlignCenter);
     cl->addWidget(guideTitle);
+
     for (const auto& step : scoringGuideSteps())
         cl->addWidget(makeStep(content, step));
+
     m_step4 = makeStep(content, scoringGuideStep4());
     m_step4->hide();
     cl->addWidget(m_step4);
@@ -137,28 +148,39 @@ QWidget* TrainingScreen::buildGuidePanel() {
     scroll->setWidget(content);
     vb->addWidget(scroll, 1);
 
+    // Bottom action stack
     m_guideBottom = new QStackedWidget(panel);
     m_guideBottom->setStyleSheet(AppTheme::transparent());
 
+    auto makeBottomBar = [&](QWidget* content) {
+        auto* pg = new QWidget;
+        auto* l  = new QHBoxLayout(pg);
+        l->setContentsMargins(PanelPadH, ItemGap, PanelPadH, PanelPadV);
+        l->setSpacing(InlineGap);
+        l->addStretch();
+        l->addWidget(content);
+        pg->setLayout(l);
+        return pg;
+    };
+
     // 0 — Loading
-    { auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
-      l->setContentsMargins(18, 12, 18, 18); l->addStretch();
-      auto* b = new QPushButton("Loading...", pg);
+    { auto* b = new QPushButton("Loading...");
       b->setStyleSheet(AppTheme::buttonPrimary()); b->setEnabled(false);
-      l->addWidget(b); pg->setLayout(l); m_guideBottom->addWidget(pg); }
+      m_guideBottom->addWidget(makeBottomBar(b)); }
 
     // 1 — Frame Target
-    { auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
-      l->setContentsMargins(18, 12, 18, 18); l->addStretch();
-      auto* b = new QPushButton("Frame Target", pg);
+    { auto* b = new QPushButton("Frame Target");
       b->setStyleSheet(AppTheme::buttonPrimary());
       b->setCursor(Qt::PointingHandCursor);
       connect(b, &QPushButton::clicked, this, &TrainingScreen::enterCalibrating);
-      l->addWidget(b); pg->setLayout(l); m_guideBottom->addWidget(pg); }
+      m_guideBottom->addWidget(makeBottomBar(b)); }
 
     // 2 — Stop + Start Scoring
-    { auto* pg = new QWidget; auto* l = new QHBoxLayout(pg);
-      l->setContentsMargins(18, 12, 18, 18); l->addStretch();
+    { auto* pg = new QWidget;
+      auto* l  = new QHBoxLayout(pg);
+      l->setContentsMargins(PanelPadH, ItemGap, PanelPadH, PanelPadV);
+      l->setSpacing(InlineGap);
+      l->addStretch();
       auto* stop = new QPushButton("Stop", pg);
       stop->setStyleSheet(AppTheme::buttonDanger());
       stop->setCursor(Qt::PointingHandCursor);
@@ -167,8 +189,10 @@ QWidget* TrainingScreen::buildGuidePanel() {
       sc->setStyleSheet(AppTheme::buttonPrimary());
       sc->setCursor(Qt::PointingHandCursor);
       connect(sc, &QPushButton::clicked, this, &TrainingScreen::enterScoring);
-      l->addWidget(stop); l->addSpacing(10); l->addWidget(sc);
-      pg->setLayout(l); m_guideBottom->addWidget(pg); }
+      l->addWidget(stop);
+      l->addWidget(sc);
+      pg->setLayout(l);
+      m_guideBottom->addWidget(pg); }
 
     vb->addWidget(m_guideBottom);
     panel->setLayout(vb);
@@ -176,6 +200,8 @@ QWidget* TrainingScreen::buildGuidePanel() {
 }
 
 QWidget* TrainingScreen::buildScoringPanel() {
+    using namespace AppTheme;
+
     auto* panel = new QWidget(this);
     panel->setStyleSheet(AppTheme::sidePanel());
     auto* vb = new QVBoxLayout(panel);
@@ -196,7 +222,7 @@ QWidget* TrainingScreen::buildScoringPanel() {
     auto* gridWrapper = new QWidget(panel);
     gridWrapper->setStyleSheet(AppTheme::transparent());
     auto* gw = new QVBoxLayout(gridWrapper);
-    gw->setContentsMargins(12, 8, 12, 8);
+    gw->setContentsMargins(ItemGap, InlineGap, ItemGap, InlineGap);
     gw->setSpacing(0);
     m_shotGrid = new ShotGridWidget(gridWrapper);
     gw->addWidget(m_shotGrid);
@@ -205,10 +231,11 @@ QWidget* TrainingScreen::buildScoringPanel() {
 
     // Total score panel
     auto* scoreBox = new QWidget(panel);
+    scoreBox->setAttribute(Qt::WA_StyledBackground, true);
     scoreBox->setStyleSheet(AppTheme::scorePanel());
     auto* sl = new QVBoxLayout(scoreBox);
-    sl->setContentsMargins(20, 14, 20, 14);
-    sl->setSpacing(2);
+    sl->setContentsMargins(ContentH, CardPadV, ContentH, CardPadV);
+    sl->setSpacing(RowPad);
     auto* scoreLbl = new QLabel("TOTAL SCORE", scoreBox);
     scoreLbl->setStyleSheet(AppTheme::summaryRowLabel());
     sl->addWidget(scoreLbl);
@@ -218,19 +245,19 @@ QWidget* TrainingScreen::buildScoringPanel() {
     scoreBox->setLayout(sl);
     vb->addWidget(scoreBox);
 
-    // Pause + End
+    // Pause + End row
     auto* bar = new QWidget(panel);
     bar->setStyleSheet(AppTheme::transparent());
     auto* bl = new QHBoxLayout(bar);
-    bl->setContentsMargins(18, 12, 18, 18);
-    bl->setSpacing(10);
+    bl->setContentsMargins(PanelPadH, ItemGap, PanelPadH, PanelPadV);
+    bl->setSpacing(InlineGap);
 
-    m_pauseBtn = new QPushButton("⏸  Pause", bar);
+    m_pauseBtn = new QPushButton("\u23F8  Pause", bar);
     m_pauseBtn->setStyleSheet(AppTheme::buttonDanger());
     m_pauseBtn->setCursor(Qt::PointingHandCursor);
     connect(m_pauseBtn, &QPushButton::clicked, this, [this]() {
-        if (m_paused) { resume_system(); m_paused = false; m_pauseBtn->setText("⏸  Pause"); }
-        else          { pause_system();  m_paused = true;  m_pauseBtn->setText("▶  Resume"); }
+        if (m_paused) { resume_system(); m_paused = false; m_pauseBtn->setText("\u23F8  Pause"); }
+        else          { pause_system();  m_paused = true;  m_pauseBtn->setText("\u25B6  Resume"); }
     });
 
     auto* endBtn = new QPushButton("End Session", bar);
@@ -308,7 +335,6 @@ void TrainingScreen::onTick() {
         rec.number    = result.shot.shot_number;
         rec.score     = result.shot.score;
         rec.splitTime = -1.0;
-        // Set real image path saved by dart_system
         rec.imagePath = QString::fromStdString(get_session_folder())
                         + "/shot_" + QString::number(result.shot.shot_number) + ".png";
         m_shotRecords.append(rec);

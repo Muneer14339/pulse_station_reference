@@ -5,13 +5,13 @@
 #include <QVBoxLayout>
 
 SessionSummaryTab::SessionSummaryTab(QWidget* parent) : QWidget(parent) {
+    using namespace AppTheme;
+
     setStyleSheet(AppTheme::transparent());
 
     auto* hl = new QHBoxLayout(this);
-    hl->setContentsMargins(16, 16, 16, 16);
-    hl->setSpacing(16);
-    // No Qt::AlignTop — both panels use Expanding vertical policy (set in ReviewPanel)
-    // so they'll be equal height, filling the available space
+    hl->setContentsMargins(ContentH, ContentV, ContentH, ContentV);
+    hl->setSpacing(SectionGap);
 
     m_performancePanel = new ReviewPanel("", "Performance Summary", this);
     m_paramsPanel      = new ReviewPanel("", "Session Parameters",  this);
@@ -30,12 +30,10 @@ void SessionSummaryTab::populate(const SessionResult& r) {
     m_performancePanel->addRow("Average Score",   QString::number(r.avgScore(), 'f', 2));
     m_performancePanel->addRow("Avg Split Time",
                                 r.avgSplit() > 0
-                                    ? QString::number(r.avgSplit(), 'f', 2) + "\""
-                                    : "—");
+                                    ? QString::number(r.avgSplit(), 'f', 2) + "\"" : "\u2014");
     m_performancePanel->addRow("Best Split Time",
                                 r.bestSplit() > 0
-                                    ? QString::number(r.bestSplit(), 'f', 2) + "\""
-                                    : "—");
+                                    ? QString::number(r.bestSplit(), 'f', 2) + "\"" : "\u2014");
 
     m_paramsPanel->clearRows();
     m_paramsPanel->addRow("Session ID",  r.params.sessionId);
@@ -44,6 +42,6 @@ void SessionSummaryTab::populate(const SessionResult& r) {
     m_paramsPanel->addRow("Weapon Type", r.params.weaponType);
     m_paramsPanel->addRow("Distance",    r.params.distance > 0
                                              ? QString::number(r.params.distance) + " yds"
-                                             : "—");
+                                             : "\u2014");
     m_paramsPanel->addRow("Drill",       r.params.drillId);
 }

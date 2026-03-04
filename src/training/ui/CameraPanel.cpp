@@ -1,3 +1,4 @@
+// src/training/ui/CameraPanel.cpp
 #include "CameraPanel.h"
 #include "common/AppTheme.h"
 #include "common/SnackBar.h"
@@ -5,15 +6,15 @@
 CameraPanel::CameraPanel(QWidget* parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
 
     m_scanPanel = new ScanPanel("Camera Connections", this);
-    layout->addWidget(m_scanPanel);
+    layout->addWidget(m_scanPanel, 1);
     setLayout(layout);
 
-    connect(m_scanPanel, &ScanPanel::refreshClicked,   this, &CameraPanel::scan);
+    connect(m_scanPanel, &ScanPanel::refreshClicked,    this, &CameraPanel::scan);
     connect(m_scanPanel, &ScanPanel::connectClicked,    this, &CameraPanel::onConnectClicked);
     connect(m_scanPanel, &ScanPanel::disconnectClicked, this, &CameraPanel::onDisconnectClicked);
-    // No scan here — deferred to showEvent
 }
 
 void CameraPanel::showEvent(QShowEvent* event) {
@@ -34,14 +35,14 @@ void CameraPanel::scan() {
         m_scanPanel->stopScanning();
         for (const auto& cam : cameras) {
             const QString id  = QString::number(cam.index);
-            const QString sub = QString("%1 × %2").arg(cam.width).arg(cam.height);
+            const QString sub = QString("%1 \u00D7 %2").arg(cam.width).arg(cam.height);
             m_scanPanel->addDevice(id, QString::fromStdString(cam.name), sub);
         }
     });
 }
 
 void CameraPanel::onConnectClicked(const QString& id) {
-    SnackBar::show(window(), "Connecting camera…", SnackBar::Info);
+    SnackBar::show(window(), "Connecting camera\u2026", SnackBar::Info);
     m_scanPanel->showConnecting();
 
     QTimer::singleShot(600, this, [this, id]() {
@@ -55,13 +56,14 @@ void CameraPanel::onConnectClicked(const QString& id) {
                 name = QString::fromStdString(cam.name);
 
         m_scanPanel->showConnected(name);
-        SnackBar::show(window(), QString("✓ Camera connected: %1").arg(name), SnackBar::Success);
+        SnackBar::show(window(),
+            QString("\u2713 Camera connected: %1").arg(name), SnackBar::Success);
         emit connectionChanged(true, m_selectedIndex);
     });
 }
 
 void CameraPanel::onDisconnectClicked() {
-    m_scanPanel->showConnecting("Disconnecting…");
+    m_scanPanel->showConnecting("Disconnecting\u2026");
     QTimer::singleShot(400, this, [this]() {
         m_connected = false;
         m_selectedIndex = -1;

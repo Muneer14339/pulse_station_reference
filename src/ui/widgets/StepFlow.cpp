@@ -2,19 +2,21 @@
 #include "common/AppTheme.h"
 
 StepFlow::StepFlow(QWidget* parent) : QWidget(parent) {
+    using namespace AppTheme;
+
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 8);
-    layout->setSpacing(6);
+    layout->setContentsMargins(0, 0, 0, ItemGap);
+    layout->setSpacing(InlineGap);
     setStyleSheet(AppTheme::transparent());
 
-    m_stepLabel = new QLabel("STEP 0 · READY", this);
+    m_stepLabel = new QLabel("STEP 0 \u00B7 READY", this);
     m_stepLabel->setStyleSheet(AppTheme::stepLabel());
 
     auto* pillContainer = new QWidget(this);
     pillContainer->setStyleSheet(AppTheme::transparent());
     auto* pillLayout = new QHBoxLayout(pillContainer);
     pillLayout->setContentsMargins(0, 0, 0, 0);
-    pillLayout->setSpacing(10);
+    pillLayout->setSpacing(InlineGap);
 
     const QStringList steps = {"Category", "Caliber", "Profile", "Distance", "Drill"};
     for (const QString& step : steps) {
@@ -32,11 +34,10 @@ StepFlow::StepFlow(QWidget* parent) : QWidget(parent) {
 
 void StepFlow::setCurrentStep(int step) {
     static const QStringList names = {
-        "STEP 0 · READY",    "STEP 1 · CATEGORY", "STEP 2 · CALIBER",
-        "STEP 3 · PROFILE",  "STEP 4 · DISTANCE", "STEP 5 · DRILL"
+        "STEP 0 \u00B7 READY",    "STEP 1 \u00B7 CATEGORY", "STEP 2 \u00B7 CALIBER",
+        "STEP 3 \u00B7 PROFILE",  "STEP 4 \u00B7 DISTANCE", "STEP 5 \u00B7 DRILL"
     };
     m_stepLabel->setText((step >= 0 && step < names.size()) ? names[step] : names[0]);
-
     for (int i = 0; i < m_pills.size(); ++i)
         m_pills[i]->setActive(i < step);
 }

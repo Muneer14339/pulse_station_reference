@@ -1,15 +1,15 @@
 #include "PillWidget.h"
 #include "AppTheme.h"
 
-PillWidget::PillWidget(const QString& text, QWidget* parent)
-    : QWidget(parent)
-{
+PillWidget::PillWidget(const QString& text, QWidget* parent) : QWidget(parent) {
+    using namespace AppTheme;
+
     auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(10, 5, 12, 5);
-    layout->setSpacing(7);
+    layout->setContentsMargins(SpaceM, SpaceXS, SpaceL, SpaceXS);
+    layout->setSpacing(InlineGap);
 
     m_dot = new QWidget(this);
-    m_dot->setFixedSize(8, 8);
+    m_dot->setFixedSize(SpaceS, SpaceS);
 
     m_label = new QLabel(text, this);
 

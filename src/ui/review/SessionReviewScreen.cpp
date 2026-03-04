@@ -1,3 +1,4 @@
+// src/ui/review/SessionReviewScreen.cpp
 #include "SessionReviewScreen.h"
 #include "common/AppTheme.h"
 #include <QVBoxLayout>
@@ -8,25 +9,27 @@ SessionReviewScreen::SessionReviewScreen(QWidget* parent) : QWidget(parent) {
 }
 
 void SessionReviewScreen::buildUI() {
+    using namespace AppTheme;
+
     setStyleSheet(AppTheme::transparent());
     auto* vb = new QVBoxLayout(this);
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(0);
 
-    // ── Tab bar — transparent (inherits dark bg from consoleContainer) ────
+    // ── Tab bar ───────────────────────────────────────────────────────────
     auto* tabBar = new QWidget(this);
     tabBar->setAttribute(Qt::WA_StyledBackground, true);
     tabBar->setStyleSheet(AppTheme::transparent());
     auto* tl = new QHBoxLayout(tabBar);
-    tl->setContentsMargins(16, 0, 16, 0);
-    tl->setSpacing(4);
+    tl->setContentsMargins(ContentH, 0, ContentH, 0);
+    tl->setSpacing(0);   // tabs sit flush — underline creates the separation
 
     const QStringList tabNames = {"Shot Count", "Session Summary", "Session Album", "ShoQ Review"};
     for (int i = 0; i < tabNames.size(); ++i) {
         auto* btn = new QPushButton(tabNames[i], tabBar);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setMinimumHeight(52);
         btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        btn->setMinimumHeight(TabHeight);
         int idx = i;
         connect(btn, &QPushButton::clicked, this, [this, idx]{ switchTab(idx); });
         tl->addWidget(btn, 1);
@@ -37,6 +40,7 @@ void SessionReviewScreen::buildUI() {
 
     // Divider below tab bar
     auto* tabDiv = new QWidget(this);
+    tabDiv->setAttribute(Qt::WA_StyledBackground, true);
     tabDiv->setFixedHeight(1);
     tabDiv->setStyleSheet(AppTheme::divider());
     vb->addWidget(tabDiv);
@@ -56,16 +60,18 @@ void SessionReviewScreen::buildUI() {
 
     // Divider above bottom bar
     auto* bottomDiv = new QWidget(this);
+    bottomDiv->setAttribute(Qt::WA_StyledBackground, true);
     bottomDiv->setFixedHeight(1);
     bottomDiv->setStyleSheet(AppTheme::divider());
     vb->addWidget(bottomDiv);
 
-    // ── Bottom action bar — transparent ───────────────────────────────────
+    // ── Bottom action bar ─────────────────────────────────────────────────
     auto* bottomBar = new QWidget(this);
     bottomBar->setAttribute(Qt::WA_StyledBackground, true);
     bottomBar->setStyleSheet(AppTheme::transparent());
     auto* bl = new QHBoxLayout(bottomBar);
-    bl->setContentsMargins(24, 12, 24, 12);
+    bl->setContentsMargins(ContentH, ItemGap, ContentH, ItemGap);
+    bl->setSpacing(InlineGap);
 
     auto* discardBtn = new QPushButton("Discard Session", bottomBar);
     discardBtn->setStyleSheet(AppTheme::buttonGhost());
@@ -79,7 +85,6 @@ void SessionReviewScreen::buildUI() {
 
     bl->addStretch();
     bl->addWidget(discardBtn);
-    bl->addSpacing(12);
     bl->addWidget(saveBtn);
     bottomBar->setLayout(bl);
     vb->addWidget(bottomBar);
@@ -90,14 +95,9 @@ void SessionReviewScreen::buildUI() {
 
 void SessionReviewScreen::switchTab(int index) {
     m_stack->setCurrentIndex(index);
-    for (int i = 0; i < m_tabBtns.size(); ++i) {
-        if (i == index) {
-            m_tabBtns[i]->setStyleSheet(AppTheme::connectButton());
-        } else {
-            // No border, no background — clean text-only tab
-            m_tabBtns[i]->setStyleSheet(AppTheme::transparent());
-        }
-    }
+    for (int i = 0; i < m_tabBtns.size(); ++i)
+        m_tabBtns[i]->setStyleSheet(
+            i == index ? AppTheme::tabActive() : AppTheme::tabInactive());
 }
 
 void SessionReviewScreen::populate(const SessionResult& result) {

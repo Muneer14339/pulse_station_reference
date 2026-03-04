@@ -1,20 +1,26 @@
+// ════════════════════════════════════════════════════════════════════════════
+//  QRPanel.cpp
+// ════════════════════════════════════════════════════════════════════════════
 #include "QRPanel.h"
 #include "common/AppTheme.h"
 
 QRPanel::QRPanel(QWidget* parent) : QWidget(parent) {
+    using namespace AppTheme;
+
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(14, 14, 14, 16);
-    layout->setSpacing(10);
+    layout->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
+    layout->setSpacing(ItemGap);
 
     m_titleLabel = new QLabel("Pulse ID Check-In", this);
     m_titleLabel->setStyleSheet(AppTheme::sectionTitle());
 
-    m_hintLabel = new QLabel("Scan your wristband or ID card to auto-populate shooter data.", this);
+    m_hintLabel = new QLabel(
+        "Scan your wristband or ID card to auto-populate shooter data.", this);
     m_hintLabel->setStyleSheet(AppTheme::labelMuted());
     m_hintLabel->setWordWrap(true);
 
     m_scanZone = new QWidget(this);
-    m_scanZone->setFixedHeight(200);
+    m_scanZone->setMinimumHeight(160);
     m_scanZone->setStyleSheet(AppTheme::qrScanZone());
 
     auto* scanLabel = new QLabel("SCAN ZONE", m_scanZone);
@@ -22,6 +28,7 @@ QRPanel::QRPanel(QWidget* parent) : QWidget(parent) {
     scanLabel->setAlignment(Qt::AlignCenter);
 
     auto* scanLayout = new QVBoxLayout(m_scanZone);
+    scanLayout->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
     scanLayout->addWidget(scanLabel);
     m_scanZone->setLayout(scanLayout);
 
@@ -31,7 +38,7 @@ QRPanel::QRPanel(QWidget* parent) : QWidget(parent) {
 
     layout->addWidget(m_titleLabel);
     layout->addWidget(m_hintLabel);
-    layout->addWidget(m_scanZone);
+    layout->addWidget(m_scanZone, 1);
     layout->addWidget(m_footerLabel);
     setLayout(layout);
 

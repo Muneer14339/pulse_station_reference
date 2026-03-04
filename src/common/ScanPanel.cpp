@@ -6,22 +6,26 @@ ScanPanel::ScanPanel(const QString& title, QWidget* parent) : QWidget(parent) {
 }
 
 void ScanPanel::buildUI(const QString& title) {
+    using namespace AppTheme;
+
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(14, 14, 14, 18);
-    layout->setSpacing(12);
+    layout->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
+    layout->setSpacing(ItemGap);
 
     // ── Header ────────────────────────────────────────────────────────────
     auto* headerRow = new QWidget(this);
     auto* headerLayout = new QHBoxLayout(headerRow);
     headerLayout->setContentsMargins(0, 0, 0, 0);
+    headerLayout->setSpacing(InlineGap);
 
     auto* titleLabel = new QLabel(title, headerRow);
     titleLabel->setStyleSheet(AppTheme::sectionTitle());
+    titleLabel->setWordWrap(true);   // wraps "Bluetooth Connections" on narrow sidebar
 
-    m_refreshBtn = new QPushButton("↻", headerRow);
-    m_refreshBtn->setStyleSheet(AppTheme::refreshButton());
+    m_refreshBtn = new QPushButton("\u21BB", headerRow);   // ↻
+    m_refreshBtn->setStyleSheet(AppTheme::iconButton());
     m_refreshBtn->setCursor(Qt::PointingHandCursor);
-    m_refreshBtn->setFixedSize(36, 36);
+    m_refreshBtn->setFixedSize(IconBtnSz, IconBtnSz);
 
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch();
@@ -37,19 +41,20 @@ void ScanPanel::buildUI(const QString& title) {
     m_devicesContainer = new QWidget();
     m_devicesLayout = new QVBoxLayout(m_devicesContainer);
     m_devicesLayout->setContentsMargins(0, 0, 0, 0);
-    m_devicesLayout->setSpacing(10);
+    m_devicesLayout->setSpacing(ItemGap);
 
-    // Scan loader
+    // ── Scan loader ───────────────────────────────────────────────────────
     m_scanLoader = new QWidget(m_devicesContainer);
     m_scanLoader->setStyleSheet(AppTheme::transparent());
     auto* scanLayout = new QVBoxLayout(m_scanLoader);
-    scanLayout->setContentsMargins(0, 24, 0, 24);
+    scanLayout->setContentsMargins(0, SpaceXXL, 0, SpaceXXL);
+    scanLayout->setSpacing(InlineGap);
     scanLayout->setAlignment(Qt::AlignCenter);
-    auto* scanDots = new QLabel("◉ ◎ ◎", m_scanLoader);
+    auto* scanDots = new QLabel("\u25C9 \u25CE \u25CE", m_scanLoader);
     scanDots->setObjectName("scanDots");
     scanDots->setStyleSheet(AppTheme::loaderDots());
     scanDots->setAlignment(Qt::AlignCenter);
-    auto* scanText = new QLabel("Scanning…", m_scanLoader);
+    auto* scanText = new QLabel("Scanning\u2026", m_scanLoader);
     scanText->setStyleSheet(AppTheme::loaderText());
     scanText->setAlignment(Qt::AlignCenter);
     scanLayout->addWidget(scanDots);
@@ -57,17 +62,18 @@ void ScanPanel::buildUI(const QString& title) {
     m_scanLoader->setLayout(scanLayout);
     m_scanLoader->hide();
 
-    // Connect loader
+    // ── Connect loader ────────────────────────────────────────────────────
     m_connectLoader = new QWidget(m_devicesContainer);
     m_connectLoader->setStyleSheet(AppTheme::transparent());
     auto* connLayout = new QVBoxLayout(m_connectLoader);
-    connLayout->setContentsMargins(18, 18, 18, 18);
+    connLayout->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
+    connLayout->setSpacing(InlineGap);
     connLayout->setAlignment(Qt::AlignCenter);
-    auto* connDots = new QLabel("◉ ◎ ◎", m_connectLoader);
+    auto* connDots = new QLabel("\u25C9 \u25CE \u25CE", m_connectLoader);
     connDots->setObjectName("connDots");
     connDots->setStyleSheet(AppTheme::loaderDots());
     connDots->setAlignment(Qt::AlignCenter);
-    auto* connText = new QLabel("Connecting…", m_connectLoader);
+    auto* connText = new QLabel("Connecting\u2026", m_connectLoader);
     connText->setObjectName("connText");
     connText->setStyleSheet(AppTheme::loaderText());
     connText->setAlignment(Qt::AlignCenter);
@@ -76,13 +82,14 @@ void ScanPanel::buildUI(const QString& title) {
     m_connectLoader->setLayout(connLayout);
     m_connectLoader->hide();
 
-    // Empty state
+    // ── Empty state ───────────────────────────────────────────────────────
     m_emptyState = new QWidget(m_devicesContainer);
     m_emptyState->setStyleSheet(AppTheme::transparent());
     auto* emptyLayout = new QVBoxLayout(m_emptyState);
-    emptyLayout->setContentsMargins(0, 24, 0, 24);
+    emptyLayout->setContentsMargins(0, SpaceXXL, 0, SpaceXXL);
+    emptyLayout->setSpacing(InlineGap);
     emptyLayout->setAlignment(Qt::AlignCenter);
-    auto* emptyIcon = new QLabel("◌", m_emptyState);
+    auto* emptyIcon = new QLabel("\u25CC", m_emptyState);
     emptyIcon->setStyleSheet(AppTheme::emptyIcon());
     emptyIcon->setAlignment(Qt::AlignCenter);
     auto* emptyText = new QLabel("Nothing found", m_emptyState);
@@ -113,7 +120,9 @@ void ScanPanel::buildUI(const QString& title) {
 
 void ScanPanel::tickDots() {
     m_dotCount = (m_dotCount + 1) % 3;
-    static const char* frames[] = {"◉ ◎ ◎", "◎ ◉ ◎", "◎ ◎ ◉"};
+    static const char* frames[] = {"\u25C9 \u25CE \u25CE",
+                                    "\u25CE \u25C9 \u25CE",
+                                    "\u25CE \u25CE \u25C9"};
     if (auto* w = findChild<QLabel*>("scanDots")) w->setText(frames[m_dotCount]);
     if (auto* w = findChild<QLabel*>("connDots")) w->setText(frames[m_dotCount]);
 }
@@ -140,16 +149,19 @@ void ScanPanel::stopScanning() {
 void ScanPanel::addDevice(const QString& id, const QString& primary, const QString& secondary) {
     if (m_deviceWidgets.contains(id)) return;
 
+    using namespace AppTheme;
+
     auto* card = new QWidget(m_devicesContainer);
     card->setStyleSheet(AppTheme::deviceCard());
     auto* cardLayout = new QHBoxLayout(card);
-    cardLayout->setContentsMargins(14, 12, 14, 12);
+    cardLayout->setContentsMargins(CardPadH, CardPadV, CardPadH, CardPadV);
+    cardLayout->setSpacing(InlineGap);
 
     auto* infoBlock = new QWidget(card);
     infoBlock->setStyleSheet(AppTheme::transparent());
     auto* infoLayout = new QVBoxLayout(infoBlock);
     infoLayout->setContentsMargins(0, 0, 0, 0);
-    infoLayout->setSpacing(3);
+    infoLayout->setSpacing(RowPad);
     auto* nameLabel = new QLabel(primary, infoBlock);
     nameLabel->setStyleSheet(AppTheme::deviceName());
     nameLabel->setWordWrap(true);
@@ -161,6 +173,7 @@ void ScanPanel::addDevice(const QString& id, const QString& primary, const QStri
 
     auto* connectBtn = new QPushButton("Connect", card);
     connectBtn->setStyleSheet(AppTheme::connectButton());
+    connectBtn->setMinimumWidth(80);    // never clips on any reasonable sidebar width
     connectBtn->setCursor(Qt::PointingHandCursor);
     connect(connectBtn, &QPushButton::clicked, [this, id]() { emit connectClicked(id); });
 
@@ -197,10 +210,13 @@ void ScanPanel::showConnected(const QString& name) {
     m_dotTimer->stop();
     clearDevices();
 
+    using namespace AppTheme;
+
     auto* card = new QWidget(m_devicesContainer);
     card->setStyleSheet(AppTheme::connectedCard());
     auto* cardLayout = new QHBoxLayout(card);
-    cardLayout->setContentsMargins(14, 12, 14, 12);
+    cardLayout->setContentsMargins(CardPadH, CardPadV, CardPadH, CardPadV);
+    cardLayout->setSpacing(InlineGap);
 
     auto* nameLabel = new QLabel(name, card);
     nameLabel->setStyleSheet(AppTheme::deviceName());

@@ -1,3 +1,6 @@
+// ════════════════════════════════════════════════════════════════════════════
+//  ReviewScreen.cpp
+// ════════════════════════════════════════════════════════════════════════════
 #include "ReviewScreen.h"
 #include "common/AppTheme.h"
 #include <QScrollArea>
@@ -5,6 +8,7 @@
 ReviewScreen::ReviewScreen(SessionState* state, QWidget* parent)
     : QWidget(parent), m_state(state)
 {
+    using namespace AppTheme;
     m_categories = DataModels::getCategories();
 
     auto* mainLayout = new QVBoxLayout(this);
@@ -18,8 +22,8 @@ ReviewScreen::ReviewScreen(SessionState* state, QWidget* parent)
 
     auto* content = new QWidget();
     auto* layout  = new QVBoxLayout(content);
-    layout->setContentsMargins(20, 16, 20, 32);
-    layout->setSpacing(20);
+    layout->setContentsMargins(ContentH, ContentV, ContentH, ContentV * 2);
+    layout->setSpacing(SectionGap);
 
     auto* title = new QLabel("Review Your Session", content);
     title->setStyleSheet(AppTheme::pageTitle());
@@ -30,12 +34,13 @@ ReviewScreen::ReviewScreen(SessionState* state, QWidget* parent)
 
     m_summaryBox = new SummaryBox(content);
 
-    auto* actionRow = new QWidget(content);
+    auto* actionRow    = new QWidget(content);
     actionRow->setStyleSheet(AppTheme::transparent());
     auto* actionLayout = new QHBoxLayout(actionRow);
-    actionLayout->setContentsMargins(0, 18, 0, 0);
+    actionLayout->setContentsMargins(0, SpaceS, 0, 0);
+    actionLayout->setSpacing(InlineGap);
 
-    m_backBtn = new QPushButton("← Back to Edit", actionRow);
+    m_backBtn = new QPushButton("\u2190 Back to Edit", actionRow);
     m_backBtn->setStyleSheet(AppTheme::buttonGhost());
     m_backBtn->setCursor(Qt::PointingHandCursor);
 
@@ -45,13 +50,11 @@ ReviewScreen::ReviewScreen(SessionState* state, QWidget* parent)
 
     actionLayout->addStretch();
     actionLayout->addWidget(m_backBtn);
-    actionLayout->addSpacing(10);
     actionLayout->addWidget(m_confirmBtn);
     actionRow->setLayout(actionLayout);
 
     layout->addWidget(title);
     layout->addWidget(subtitle);
-    layout->addSpacing(10);
     layout->addWidget(m_summaryBox);
     layout->addWidget(actionRow);
     layout->addStretch();
@@ -67,19 +70,14 @@ ReviewScreen::ReviewScreen(SessionState* state, QWidget* parent)
 
 void ReviewScreen::updateReview() {
     if (!m_state->isComplete()) return;
-
     const Category& cat = m_categories[m_state->categoryId()];
     const Caliber&  cal = cat.calibers[m_state->caliberId()];
-
     Profile selectedProfile;
     for (const Profile& prof : cal.profiles)
         if (prof.id == m_state->profileId()) { selectedProfile = prof; break; }
-
     Drill selectedDrill;
     for (const Drill& drl : DataModels::getDrills())
         if (drl.id == m_state->drillId()) { selectedDrill = drl; break; }
-
-    m_summaryBox->updateSummary(
-        cat.label, cal.label, selectedProfile.label,
-        m_state->distance(), selectedDrill.label);
+    m_summaryBox->updateSummary(cat.label, cal.label, selectedProfile.label,
+                                m_state->distance(), selectedDrill.label);
 }

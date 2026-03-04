@@ -3,12 +3,10 @@
 #include <QHBoxLayout>
 #include <QGraphicsOpacityEffect>
 
-// ── Public factory ────────────────────────────────────────────────────────────
 void SnackBar::show(QWidget* parent, const QString& message, Type type, int duration) {
     new SnackBar(parent, message, type, duration);
 }
 
-// ── Private constructor ───────────────────────────────────────────────────────
 SnackBar::SnackBar(QWidget* parent, const QString& message, Type type, int duration)
     : QWidget(parent), m_message(message), m_type(type), m_duration(duration)
 {
@@ -21,20 +19,24 @@ void SnackBar::buildUI() {
     setAttribute(Qt::WA_StyledBackground, true);
 
     auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(18, 13, 18, 13);
+    layout->setContentsMargins(AppTheme::SpaceXXL, AppTheme::SpaceM,
+                               AppTheme::SpaceXXL, AppTheme::SpaceM);
 
     m_label = new QLabel(m_message, this);
     m_label->setStyleSheet(AppTheme::snackBarText());
     layout->addWidget(m_label);
 
-    const QString borderColor = (m_type == Success) ? "rgba(79, 209, 197, 180)"
-                              : (m_type == Error)   ? "rgba(255, 100, 100, 180)"
-                                                    : "rgba(255, 255, 255, 36)";
+    // Use AppColors directly — avoids the QColor("rgba(...)") parse failure
+    const QColor borderColor =
+        (m_type == Success) ? AppColors::withAlpha(AppColors::Accent(),       180)
+      : (m_type == Error)   ? AppColors::withAlpha(AppColors::Error(),        180)
+                            : AppColors::withAlpha(AppColors::TextPrimary(),   36);
+
     setStyleSheet(AppTheme::snackBar(borderColor));
     adjustSize();
 
     if (QWidget* p = parentWidget())
-        move(p->width() - width() - 20, 20);
+        move(p->width() - width() - AppTheme::SpaceXXL, AppTheme::SpaceXXL);
 
     raise();
 

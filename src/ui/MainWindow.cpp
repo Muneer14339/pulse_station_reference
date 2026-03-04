@@ -9,8 +9,11 @@
 #include <QLabel>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
-    setWindowTitle("PulseStation · Lane Console");
+    using namespace AppTheme;
+
+    setWindowTitle("PulseStation \u00B7 Lane Console");
     resize(1280, 800);
+    setMinimumSize(1024, 700);
 
     m_state     = new SessionState(this);
     m_btManager = new BluetoothManager(this);
@@ -18,9 +21,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // ── Root layout ───────────────────────────────────────────────────────
     auto* centralWidget = new QWidget(this);
     auto* rootLayout    = new QVBoxLayout(centralWidget);
-    rootLayout->setContentsMargins(20, 20, 20, 20);
+    rootLayout->setContentsMargins(ContentV, ContentV, ContentV, ContentV);
 
     auto* consoleContainer = new QWidget(centralWidget);
+    consoleContainer->setAttribute(Qt::WA_StyledBackground, true);
     consoleContainer->setStyleSheet(AppTheme::consoleContainer());
     auto* containerLayout = new QVBoxLayout(consoleContainer);
     containerLayout->setContentsMargins(0, 0, 0, 0);
@@ -35,7 +39,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_reviewScreen        = new ReviewScreen(m_state, m_stack);
     m_trainingPlaceholder = new TrainingPlaceholder(m_state, m_stack);
     m_trainingScreen      = new TrainingScreen(m_state, m_stack);
-    m_sessionReviewScreen = new SessionReviewScreen(m_stack);   // ← new
+    m_sessionReviewScreen = new SessionReviewScreen(m_stack);
 
     m_stack->addWidget(m_consoleWidget);        // 0
     m_stack->addWidget(m_reviewScreen);         // 1
@@ -63,35 +67,36 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_trainingPlaceholder, &TrainingPlaceholder::sessionStarted,
             this, &MainWindow::showActiveSession);
 
-    // TrainingScreen now emits SessionResult → go to review screen
     connect(m_trainingScreen, &TrainingScreen::sessionEnded,
             this, &MainWindow::showSessionReview);
 
-    // Save / Discard from review → back to training placeholder
     connect(m_sessionReviewScreen, &SessionReviewScreen::saveRequested,
             this, &MainWindow::showTraining);
     connect(m_sessionReviewScreen, &SessionReviewScreen::discardRequested,
             this, &MainWindow::showTraining);
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-
 void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
+    using namespace AppTheme;
+
     auto* header = new QWidget(parent);
+    header->setAttribute(Qt::WA_StyledBackground, true);
     header->setStyleSheet(AppTheme::headerBar());
     auto* headerLayout = new QHBoxLayout(header);
-    headerLayout->setContentsMargins(26, 16, 26, 12);
+    headerLayout->setContentsMargins(ContentH, PanelPadV, ContentH, ItemGap);
+    headerLayout->setSpacing(InlineGap);
 
     auto* titleBlock  = new QWidget(header);
     titleBlock->setStyleSheet(AppTheme::transparent());
     auto* titleLayout = new QVBoxLayout(titleBlock);
     titleLayout->setContentsMargins(0, 0, 0, 0);
-    titleLayout->setSpacing(4);
+    titleLayout->setSpacing(RowPad);
 
-    auto* appTitle = new QLabel("PULSESTATION · LANE CONSOLE", titleBlock);
+    auto* appTitle = new QLabel("PULSESTATION \u00B7 LANE CONSOLE", titleBlock);
     appTitle->setStyleSheet(AppTheme::headerAppTitle());
     auto* appSubtitle = new QLabel(
-        "Wired camera to PulseAim · Wi-Fi to cloud only · Self-service setup.", titleBlock);
+        "Wired camera to PulseAim \u00B7 Wi-Fi to cloud only \u00B7 Self-service setup.",
+        titleBlock);
     appSubtitle->setStyleSheet(AppTheme::headerAppSubtitle());
     titleLayout->addWidget(appTitle);
     titleLayout->addWidget(appSubtitle);
@@ -101,14 +106,14 @@ void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
     rightInfo->setStyleSheet(AppTheme::transparent());
     auto* rightLayout = new QVBoxLayout(rightInfo);
     rightLayout->setContentsMargins(0, 0, 0, 0);
-    rightLayout->setSpacing(3);
+    rightLayout->setSpacing(RowPad);
     rightLayout->setAlignment(Qt::AlignRight);
 
     auto* laneLabel = new QLabel(
         "Lane <strong style='color: rgb(255,182,73);'>7</strong>", rightInfo);
     laneLabel->setStyleSheet(AppTheme::laneLabel());
     laneLabel->setAlignment(Qt::AlignRight);
-    auto* rangeLabel = new QLabel("Indoor Range · 25 yards Max", rightInfo);
+    auto* rangeLabel = new QLabel("Indoor Range \u00B7 25 yards Max", rightInfo);
     rangeLabel->setStyleSheet(AppTheme::laneSublabel());
     rangeLabel->setAlignment(Qt::AlignRight);
     rightLayout->addWidget(laneLabel);
@@ -122,19 +127,15 @@ void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
     parentLayout->addWidget(header);
 }
 
-// ── Paint ─────────────────────────────────────────────────────────────────────
-
 void MainWindow::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     QRadialGradient gradient(width() / 2, 0, height());
-    gradient.setColorAt(0,   AppColors::Surface());    // () add karo
-gradient.setColorAt(0.6, AppColors::Background()); // () add karo
+    gradient.setColorAt(0,   AppColors::Surface());
+    gradient.setColorAt(0.6, AppColors::Background());
     painter.fillRect(rect(), gradient);
     QMainWindow::paintEvent(event);
 }
-
-// ── Navigation ────────────────────────────────────────────────────────────────
 
 void MainWindow::showConsole() {
     m_state->reset();

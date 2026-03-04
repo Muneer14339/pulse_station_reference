@@ -7,24 +7,29 @@
 BluetoothPanel::BluetoothPanel(BluetoothManager* btManager, QWidget* parent)
     : QWidget(parent), m_btManager(btManager)
 {
+    using namespace AppTheme;
+
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     // ── Offline panel ─────────────────────────────────────────────────────
     m_offlinePanel = new QWidget(this);
+    m_offlinePanel->setAttribute(Qt::WA_StyledBackground, true);
     m_offlinePanel->setStyleSheet(AppTheme::offlinePanel());
     auto* offLayout = new QVBoxLayout(m_offlinePanel);
-    offLayout->setContentsMargins(18, 18, 18, 18);
-    offLayout->setSpacing(12);
+    offLayout->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
+    offLayout->setSpacing(ItemGap);
+    offLayout->setAlignment(Qt::AlignTop);
 
-    auto* offIcon = new QLabel("⚠", m_offlinePanel);
+    auto* offIcon = new QLabel("\u26A0", m_offlinePanel);   // ⚠
     offIcon->setStyleSheet(AppTheme::warningIcon());
     offIcon->setAlignment(Qt::AlignCenter);
     auto* offTitle = new QLabel("Bluetooth is Off", m_offlinePanel);
     offTitle->setStyleSheet(AppTheme::sectionTitle());
     offTitle->setAlignment(Qt::AlignCenter);
-    auto* offHint = new QLabel("Enable Bluetooth to discover AimSync devices.", m_offlinePanel);
+    auto* offHint = new QLabel(
+        "Enable Bluetooth to discover AimSync devices.", m_offlinePanel);
     offHint->setStyleSheet(AppTheme::labelMuted());
     offHint->setWordWrap(true);
     offHint->setAlignment(Qt::AlignCenter);
@@ -37,32 +42,48 @@ BluetoothPanel::BluetoothPanel(BluetoothManager* btManager, QWidget* parent)
     offLayout->addWidget(offIcon);
     offLayout->addWidget(offTitle);
     offLayout->addWidget(offHint);
+    offLayout->addSpacing(SpaceXS);
     offLayout->addWidget(btBtn);
     m_offlinePanel->setLayout(offLayout);
 
     // ── ScanPanel ─────────────────────────────────────────────────────────
     m_scanPanel = new ScanPanel("Bluetooth Connections", this);
 
-    // ── Help panel ────────────────────────────────────────────────────────
+    // ── Help panel (wrapped so outer margins match ScanPanel's internal padding) ─
     m_helpPanel = new QWidget(this);
+    m_helpPanel->setAttribute(Qt::WA_StyledBackground, true);
     m_helpPanel->setStyleSheet(AppTheme::helpPanel());
     auto* helpLayout = new QVBoxLayout(m_helpPanel);
-    helpLayout->setContentsMargins(12, 10, 12, 10);
-    helpLayout->setSpacing(4);
+    helpLayout->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, PanelPadV);
+    helpLayout->setSpacing(SpaceXS);
+
     auto addHelp = [&](const QString& text, const QString& style) {
         auto* l = new QLabel(text, m_helpPanel);
         l->setStyleSheet(style);
+        l->setWordWrap(true);   // prevent right-side clip on long lines
         helpLayout->addWidget(l);
     };
     addHelp("If device is not listed", AppTheme::helpTitle());
-    addHelp("• Ensure the AimSync device is on.", AppTheme::helpItem());
-    addHelp("• Restart the AimSync device.", AppTheme::helpItem());
-    addHelp("• If issue persists: support@pulsestation.com", AppTheme::helpEmail());
+    addHelp("\u2022 Ensure the AimSync device is on.", AppTheme::helpItem());
+    addHelp("\u2022 Restart the AimSync device.", AppTheme::helpItem());
+    addHelp("\u2022 If issue persists: support@pulsestation.com", AppTheme::helpEmail());
     m_helpPanel->setLayout(helpLayout);
+
+    // Wrapper gives the help card the same left/right/bottom outer gap as
+    // the ScanPanel's internal padding — keeps both visually balanced.
+    // ObjectName lets onBluetoothPoweredChanged toggle it without a member pointer.
+    auto* helpWrapper = new QWidget(this);
+    helpWrapper->setObjectName("helpWrapper");
+    helpWrapper->setStyleSheet(AppTheme::transparent());
+    auto* hwl = new QVBoxLayout(helpWrapper);
+    hwl->setContentsMargins(PanelPadH, 0, PanelPadH, PanelPadV);
+    hwl->setSpacing(0);
+    hwl->addWidget(m_helpPanel);
+    helpWrapper->setLayout(hwl);
 
     layout->addWidget(m_offlinePanel);
     layout->addWidget(m_scanPanel, 1);
-    layout->addWidget(m_helpPanel);
+    layout->addWidget(helpWrapper);
     setLayout(layout);
 
     // ── Wire signals ──────────────────────────────────────────────────────
@@ -72,7 +93,7 @@ BluetoothPanel::BluetoothPanel(BluetoothManager* btManager, QWidget* parent)
             m_btManager, &BluetoothManager::connectToDevice);
     connect(m_scanPanel, &ScanPanel::disconnectClicked,
             [this]() {
-                m_scanPanel->showConnecting("Disconnecting…");
+                m_scanPanel->showConnecting("Disconnecting\u2026");
                 m_btManager->disconnectDevice();
             });
 
@@ -104,12 +125,12 @@ void BluetoothPanel::onScanningStarted()  { m_scanPanel->startScanning(); }
 void BluetoothPanel::onScanningStopped()  { m_scanPanel->stopScanning(); }
 
 void BluetoothPanel::onConnecting() {
-    SnackBar::show(window(), "Connecting to device…", SnackBar::Info);
+    SnackBar::show(window(), "Connecting to device\u2026", SnackBar::Info);
     m_scanPanel->showConnecting();
 }
 
 void BluetoothPanel::onConnected(const QString& name) {
-    SnackBar::show(window(), QString("✓ Connected to %1").arg(name), SnackBar::Success);
+    SnackBar::show(window(), QString("\u2713 Connected to %1").arg(name), SnackBar::Success);
     m_scanPanel->showConnected(name);
     emit connectionChanged(true);
 }
@@ -123,6 +144,9 @@ void BluetoothPanel::onDisconnected() {
 void BluetoothPanel::onBluetoothPoweredChanged(bool powered) {
     m_offlinePanel->setVisible(!powered);
     m_scanPanel->setVisible(powered);
+    // Toggle the whole wrapper (which contains m_helpPanel + outer margins)
+    if (auto* hw = findChild<QWidget*>("helpWrapper"))
+        hw->setVisible(powered);
     m_helpPanel->setVisible(powered);
     if (powered)
         SnackBar::show(window(), "Bluetooth enabled", SnackBar::Success);

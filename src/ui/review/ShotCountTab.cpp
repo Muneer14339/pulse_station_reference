@@ -7,10 +7,12 @@
 #include <QFrame>
 
 ShotCountTab::ShotCountTab(QWidget* parent) : QWidget(parent) {
+    using namespace AppTheme;
+
     setStyleSheet(AppTheme::transparent());
     auto* hl = new QHBoxLayout(this);
-    hl->setContentsMargins(20, 20, 20, 20);
-    hl->setSpacing(16);
+    hl->setContentsMargins(ContentH, ContentV, ContentH, ContentV);
+    hl->setSpacing(SectionGap);
 
     // ── Left 55%: shared ShotGridWidget ──────────────────────────────────
     m_shotGrid = new ShotGridWidget(this);
@@ -25,8 +27,8 @@ ShotCountTab::ShotCountTab(QWidget* parent) : QWidget(parent) {
     auto* rightWidget = new QWidget;
     rightWidget->setStyleSheet(AppTheme::transparent());
     auto* rvb = new QVBoxLayout(rightWidget);
-    rvb->setContentsMargins(0, 0, 4, 0);
-    rvb->setSpacing(12);
+    rvb->setContentsMargins(0, 0, 0, 0);
+    rvb->setSpacing(ItemGap);
 
     m_paramsPanel  = new ReviewPanel("", "Session Parameters",  rightWidget);
     m_statsPanel   = new ReviewPanel("", "Session Stats",       rightWidget);
@@ -45,36 +47,29 @@ ShotCountTab::ShotCountTab(QWidget* parent) : QWidget(parent) {
 }
 
 void ShotCountTab::populate(const SessionResult& r) {
-    // ── Shot grid ─────────────────────────────────────────────────────────
     m_shotGrid->populate(r.shots);
 
-    // ── Session Parameters panel ──────────────────────────────────────────
     m_paramsPanel->clearRows();
-    m_paramsPanel->addRow("Session ID",  r.params.sessionId.isEmpty() ? "—" : r.params.sessionId);
-    m_paramsPanel->addRow("Firearm",     r.params.firearm.isEmpty()   ? "—" : r.params.firearm);
-    m_paramsPanel->addRow("Weapon Type", r.params.weaponType.isEmpty()? "—" : r.params.weaponType);
+    m_paramsPanel->addRow("Session ID",  r.params.sessionId.isEmpty()  ? "\u2014" : r.params.sessionId);
+    m_paramsPanel->addRow("Firearm",     r.params.firearm.isEmpty()    ? "\u2014" : r.params.firearm);
+    m_paramsPanel->addRow("Weapon Type", r.params.weaponType.isEmpty() ? "\u2014" : r.params.weaponType);
     m_paramsPanel->addRow("Distance",    r.params.distance > 0
-                                           ? QString::number(r.params.distance) + " yds"
-                                           : "—");
-    m_paramsPanel->addRow("Drill",       r.params.drillId.isEmpty()   ? "—" : r.params.drillId);
+                                           ? QString::number(r.params.distance) + " yds" : "\u2014");
+    m_paramsPanel->addRow("Drill",       r.params.drillId.isEmpty()    ? "\u2014" : r.params.drillId);
 
-    // ── Session Stats panel ───────────────────────────────────────────────
     m_statsPanel->clearRows();
     m_statsPanel->addRow("Scheduled Shots", QString::number(r.params.shotsScheduled));
     m_statsPanel->addRow("Fired Shots",     QString::number(r.shotsFired()));
     m_statsPanel->addRow("Missing Shots",   QString::number(r.shotsMissing()));
-    m_statsPanel->addRow("Total Score",     QString::number(r.totalScore()), /*highlight=*/true);
+    m_statsPanel->addRow("Total Score",     QString::number(r.totalScore()), true);
 
-    // ── Performance Metrics panel ─────────────────────────────────────────
     m_metricsPanel->clearRows();
     m_metricsPanel->addRow("Average Score",
                             QString::number(r.avgScore(), 'f', 2));
-    m_metricsPanel->addRow("Average Split Time",
+    m_metricsPanel->addRow("Average Split",
                             r.avgSplit() > 0
-                                ? QString::number(r.avgSplit(), 'f', 2) + "\""
-                                : "—");
-    m_metricsPanel->addRow("Best Split Time",
+                                ? QString::number(r.avgSplit(), 'f', 2) + "\"" : "\u2014");
+    m_metricsPanel->addRow("Best Split",
                             r.bestSplit() > 0
-                                ? QString::number(r.bestSplit(), 'f', 2) + "\""
-                                : "—");
+                                ? QString::number(r.bestSplit(), 'f', 2) + "\"" : "\u2014");
 }

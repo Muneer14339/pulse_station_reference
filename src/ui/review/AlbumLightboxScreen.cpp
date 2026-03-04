@@ -8,11 +8,7 @@
 #include <QGestureEvent>
 #include <QPinchGesture>
 
-// Nav arrow button: QPushButton with large guillemet characters.
-// QToolButton::setArrowType draws tiny arrows when a QSS stylesheet is applied —
-// using text + font-size is the reliable cross-platform solution.
 static QPushButton* makeArrowBtn(bool isLeft, QWidget* parent) {
-    // ‹ / › (single guillemets) render well at large font sizes on all platforms
     auto* btn = new QPushButton(isLeft ? "\u2039" : "\u203A", parent);
     btn->setFixedSize(52, 80);
     btn->setStyleSheet(AppTheme::navArrowButton());
@@ -22,6 +18,8 @@ static QPushButton* makeArrowBtn(bool isLeft, QWidget* parent) {
 }
 
 AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
+    using namespace AppTheme;
+
     setAttribute(Qt::WA_StyledBackground, true);
     setAttribute(Qt::WA_AcceptTouchEvents, true);
     grabGesture(Qt::PinchGesture);
@@ -31,19 +29,19 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
 
-    // ── Left: image area ─────────────────────────────────────────────────────
+    // ── Left: image area ──────────────────────────────────────────────────
     auto* imgPanel = new QWidget(this);
     imgPanel->setStyleSheet(AppTheme::transparent());
     auto* imgVb = new QVBoxLayout(imgPanel);
     imgVb->setContentsMargins(0, 0, 0, 0);
     imgVb->setSpacing(0);
 
-    // Zoom hint
+    // Zoom hint bar
     auto* hintBar = new QWidget(imgPanel);
     hintBar->setStyleSheet(AppTheme::transparent());
     auto* hbl = new QHBoxLayout(hintBar);
-    hbl->setContentsMargins(16, 12, 16, 8);
-    m_zoomHint = new QLabel("Pinch or scroll to zoom  (1.0×)", hintBar);
+    hbl->setContentsMargins(ContentH, ItemGap, ContentH, SpaceS);
+    m_zoomHint = new QLabel("Pinch or scroll to zoom  (1.0\u00D7)", hintBar);
     m_zoomHint->setStyleSheet(AppTheme::labelMuted());
     hbl->addWidget(m_zoomHint);
     hbl->addStretch();
@@ -54,8 +52,8 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     auto* navRow = new QWidget(imgPanel);
     navRow->setStyleSheet(AppTheme::transparent());
     auto* nl = new QHBoxLayout(navRow);
-    nl->setContentsMargins(12, 0, 12, 16);
-    nl->setSpacing(12);
+    nl->setContentsMargins(ItemGap, 0, ItemGap, ContentV);
+    nl->setSpacing(ItemGap);
 
     m_prevBtn = makeArrowBtn(true, navRow);
     connect(m_prevBtn, &QPushButton::clicked, this, [this]{ loadShot(m_idx - 1); });
@@ -83,9 +81,10 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     imgVb->addWidget(navRow, 1);
     imgPanel->setLayout(imgVb);
 
-    // ── Right: details panel (full height) ───────────────────────────────────
+    // ── Right: details panel ──────────────────────────────────────────────
+    // Min width only — panel grows with window; no fixed width so text never clips.
     auto* detailPanel = new QWidget(this);
-    detailPanel->setFixedWidth(270);
+    detailPanel->setMinimumWidth(SidebarMinW - SpaceXXXL);
     detailPanel->setAttribute(Qt::WA_StyledBackground, true);
     detailPanel->setStyleSheet(AppTheme::sidePanel());
 
@@ -97,19 +96,20 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     infoBox->setStyleSheet(AppTheme::summaryBox());
     infoBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto* il = new QVBoxLayout(infoBox);
-    il->setContentsMargins(16, 14, 16, 14);
-    il->setSpacing(10);
+    il->setContentsMargins(CardPadH, CardPadV, CardPadH, CardPadV);
+    il->setSpacing(ItemGap);
 
-    // Title + close on same row
+    // Title row + close button
     auto* titleRow = new QWidget(infoBox);
     titleRow->setStyleSheet(AppTheme::transparent());
     auto* trl = new QHBoxLayout(titleRow);
     trl->setContentsMargins(0, 0, 0, 0);
+    trl->setSpacing(InlineGap);
     auto* titleLbl = new QLabel("Shot Details", infoBox);
     titleLbl->setStyleSheet(AppTheme::sectionTitle());
-    auto* closeBtn = new QPushButton("✕", infoBox);
-    closeBtn->setStyleSheet(AppTheme::refreshButton());
-    closeBtn->setFixedSize(32, 32);
+    auto* closeBtn = new QPushButton("\u2715", infoBox);   // ✕
+    closeBtn->setStyleSheet(AppTheme::iconButton());
+    closeBtn->setFixedSize(IconBtnSz - SpaceXS, IconBtnSz - SpaceXS);
     closeBtn->setCursor(Qt::PointingHandCursor);
     connect(closeBtn, &QPushButton::clicked, this, &AlbumLightboxScreen::closeRequested);
     trl->addWidget(titleLbl, 1);
@@ -118,25 +118,29 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     il->addWidget(titleRow);
 
     auto* div = new QWidget(infoBox);
+    div->setAttribute(Qt::WA_StyledBackground, true);
     div->setFixedHeight(1);
     div->setStyleSheet(AppTheme::divider());
     il->addWidget(div);
 
+    // makeRow: label (muted, small) on top; value below with wordWrap.
+    // Vertical layout prevents long session IDs from being clipped by right-alignment.
     auto makeRow = [&](const QString& key) -> QLabel* {
-        auto* row = new QWidget(infoBox);
-        row->setStyleSheet(AppTheme::transparent());
-        auto* rl = new QHBoxLayout(row);
-        rl->setContentsMargins(0, 2, 0, 2);
-        auto* k = new QLabel(key, row);
+        auto* block = new QWidget(infoBox);
+        block->setStyleSheet(AppTheme::transparent());
+        auto* bl = new QVBoxLayout(block);
+        bl->setContentsMargins(0, RowPad, 0, RowPad);
+        bl->setSpacing(RowPad);
+        auto* k = new QLabel(key, block);
         k->setStyleSheet(AppTheme::labelSecondary());
-        auto* v = new QLabel("—", row);
+        auto* v = new QLabel("\u2014", block);
         v->setStyleSheet(AppTheme::summaryRowValue());
-        v->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        rl->addWidget(k);
-        rl->addStretch();
-        rl->addWidget(v);
-        row->setLayout(rl);
-        il->addWidget(row);
+        v->setWordWrap(true);            // long IDs wrap instead of clip
+        v->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        bl->addWidget(k);
+        bl->addWidget(v);
+        block->setLayout(bl);
+        il->addWidget(block);
         return v;
     };
 
@@ -157,7 +161,7 @@ void AlbumLightboxScreen::open(const QVector<ShotRecord>& shots,
                                 const QString& sessionId, int startIndex)
 {
     m_shots = shots;
-    m_detailSession->setText(sessionId.isEmpty() ? "—" : sessionId);
+    m_detailSession->setText(sessionId.isEmpty() ? "\u2014" : sessionId);
     loadShot(startIndex);
 }
 
@@ -181,14 +185,14 @@ void AlbumLightboxScreen::loadShot(int idx) {
 
 void AlbumLightboxScreen::applyZoom(double newZoom) {
     m_zoom = qBound(0.5, newZoom, 5.0);
-    m_zoomHint->setText(QString("Pinch or scroll to zoom  (%1×)")
+    m_zoomHint->setText(QString("Pinch or scroll to zoom  (%1\u00D7)")
                         .arg(QString::number(m_zoom, 'f', 1)));
 
     if (m_pixmap.isNull()) {
         m_imageLabel->setPixmap(QPixmap());
         m_imageLabel->setText(m_shots.isEmpty()
             ? "No Image"
-            : QString("Shot #%1 — No Image").arg(m_shots.value(m_idx).number));
+            : QString("Shot #%1 \u2014 No Image").arg(m_shots.value(m_idx).number));
         m_imageLabel->resize(m_scrollArea->viewport()->size());
         return;
     }

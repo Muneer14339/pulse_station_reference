@@ -2,9 +2,10 @@
 #include "common/AppTheme.h"
 
 SummaryBox::SummaryBox(QWidget* parent) : QWidget(parent) {
+    using namespace AppTheme;
     m_layout = new QVBoxLayout(this);
-    m_layout->setContentsMargins(14, 12, 14, 12);
-    m_layout->setSpacing(4);
+    m_layout->setContentsMargins(CardPadH, CardPadV, CardPadH, CardPadV);
+    m_layout->setSpacing(RowPad);
     setLayout(m_layout);
     setStyleSheet(AppTheme::summaryBox());
 }
@@ -12,7 +13,6 @@ SummaryBox::SummaryBox(QWidget* parent) : QWidget(parent) {
 void SummaryBox::updateSummary(const QString& category, const QString& caliber,
                                const QString& profile, int distance, const QString& drill)
 {
-    // Clear previous rows
     while (m_layout->count() > 0) {
         QWidget* w = m_layout->itemAt(0)->widget();
         m_layout->removeWidget(w);
@@ -20,10 +20,12 @@ void SummaryBox::updateSummary(const QString& category, const QString& caliber,
     }
 
     auto addRow = [this](const QString& label, const QString& value, bool highlight = false) {
+        using namespace AppTheme;
         auto* row = new QWidget(this);
         row->setStyleSheet(AppTheme::transparent());
         auto* rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(0, 2, 0, 2);
+        rowLayout->setContentsMargins(0, RowPad, 0, RowPad);
+        rowLayout->setSpacing(InlineGap);
 
         auto* labelW = new QLabel(label.toUpper(), row);
         labelW->setStyleSheet(AppTheme::summaryRowLabel());
@@ -42,5 +44,5 @@ void SummaryBox::updateSummary(const QString& category, const QString& caliber,
     addRow("Loadout",  QString("%1 / %2").arg(category, caliber));
     addRow("Profile",  profile);
     addRow("Distance", QString("%1 yds").arg(distance));
-    addRow("Drill",    drill, /*highlight=*/true);
+    addRow("Drill",    drill, true);
 }
