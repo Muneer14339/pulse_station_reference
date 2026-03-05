@@ -1,18 +1,21 @@
-// src/training/ui/TrainingScreen.cpp
 #include "TrainingScreen.h"
 #include "training/data/ScoringGuideData.h"
 #include "common/AppTheme.h"
 #include "common/SnackBar.h"
 #include <QHBoxLayout>
-#include <QStandardPaths>
 
 TrainingScreen::TrainingScreen(SessionState* state, QWidget* parent)
     : QWidget(parent), m_state(state)
 {
     buildUI();
-    auto onDisconnect = [this](bool ok) { if (!ok) stopAndExit(); };
+
+    auto onDisconnect = [this](bool connected) {
+        if (connected || !isVisible()) return;
+        stopAndExit();
+    };
     connect(m_state, &SessionState::bluetoothConnectionChanged, this, onDisconnect);
     connect(m_state, &SessionState::cameraConnectionChanged,   this, onDisconnect);
+
     m_tickTimer = new QTimer(this);
     m_tickTimer->setInterval(33);
     connect(m_tickTimer, &QTimer::timeout, this, &TrainingScreen::onTick);
@@ -34,32 +37,40 @@ void TrainingScreen::beginSession() {
     m_tickTimer->start();
 }
 
-static QWidget* makeTopBar(bool showDownload, QObject* ctx,
-                            const std::function<void()>& leftAction,
-                            const std::function<void()>& downloadAction = {})
-{
+static QWidget* makeStatusBar(QWidget* parent) {
     using namespace AppTheme;
-
-    auto* bar = new QWidget;
+    auto* bar = new QWidget(parent);
     bar->setStyleSheet(AppTheme::transparent());
     auto* l = new QHBoxLayout(bar);
     l->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, ItemGap);
     l->setSpacing(InlineGap);
+    l->addStretch();
+    for (const char* txt : {"\u25CF Wi-Fi", "\u2B21  BLE"}) {
+        auto* lbl = new QLabel(txt, bar);
+        lbl->setStyleSheet(AppTheme::connectedIcon());
+        l->addWidget(lbl);
+        if (txt == std::string("\u25CF Wi-Fi")) l->addSpacing(ItemGap);
+    }
+    bar->setLayout(l);
+    return bar;
+}
 
-    // Left action button (back ← or download ⬇)
-    auto* btn = new QPushButton(showDownload ? "\u2B07" : "\u2190", bar);
+static QWidget* makeTopBarWithBack(QWidget* parent, QObject* ctx,
+                                    const std::function<void()>& backAction)
+{
+    using namespace AppTheme;
+    auto* bar = new QWidget(parent);
+    bar->setStyleSheet(AppTheme::transparent());
+    auto* l = new QHBoxLayout(bar);
+    l->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, ItemGap);
+    l->setSpacing(InlineGap);
+    auto* btn = new QPushButton("\u2190", bar);
     btn->setStyleSheet(AppTheme::iconButton());
     btn->setFixedSize(IconBtnSz, IconBtnSz);
     btn->setCursor(Qt::PointingHandCursor);
-    if (showDownload)
-        QObject::connect(btn, &QPushButton::clicked, ctx,
-                         [downloadAction]{ if (downloadAction) downloadAction(); });
-    else
-        QObject::connect(btn, &QPushButton::clicked, ctx,
-                         [leftAction]{ leftAction(); });
+    QObject::connect(btn, &QPushButton::clicked, ctx, [backAction]{ backAction(); });
     l->addWidget(btn);
     l->addStretch();
-
     for (const char* txt : {"\u25CF Wi-Fi", "\u2B21  BLE"}) {
         auto* lbl = new QLabel(txt, bar);
         lbl->setStyleSheet(AppTheme::connectedIcon());
@@ -72,7 +83,6 @@ static QWidget* makeTopBar(bool showDownload, QObject* ctx,
 
 static QWidget* makeStep(QWidget* parent, const GuideStep& step) {
     using namespace AppTheme;
-
     auto* block = new QWidget(parent);
     block->setStyleSheet(AppTheme::transparent());
     auto* vb = new QVBoxLayout(block);
@@ -120,7 +130,7 @@ QWidget* TrainingScreen::buildGuidePanel() {
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(0);
 
-    vb->addWidget(makeTopBar(false, this, [this]{ stopAndExit(); }));
+    vb->addWidget(makeTopBarWithBack(panel, this, [this]{ cancelSession(); }));
 
     auto* scroll = new QScrollArea(panel);
     scroll->setWidgetResizable(true);
@@ -148,34 +158,30 @@ QWidget* TrainingScreen::buildGuidePanel() {
     scroll->setWidget(content);
     vb->addWidget(scroll, 1);
 
-    // Bottom action stack
     m_guideBottom = new QStackedWidget(panel);
     m_guideBottom->setStyleSheet(AppTheme::transparent());
 
-    auto makeBottomBar = [&](QWidget* content) {
+    auto makeBottomBar = [&](QWidget* w) {
         auto* pg = new QWidget;
         auto* l  = new QHBoxLayout(pg);
         l->setContentsMargins(PanelPadH, ItemGap, PanelPadH, PanelPadV);
         l->setSpacing(InlineGap);
         l->addStretch();
-        l->addWidget(content);
+        l->addWidget(w);
         pg->setLayout(l);
         return pg;
     };
 
-    // 0 — Loading
     { auto* b = new QPushButton("Loading...");
       b->setStyleSheet(AppTheme::buttonPrimary()); b->setEnabled(false);
       m_guideBottom->addWidget(makeBottomBar(b)); }
 
-    // 1 — Frame Target
     { auto* b = new QPushButton("Frame Target");
       b->setStyleSheet(AppTheme::buttonPrimary());
       b->setCursor(Qt::PointingHandCursor);
       connect(b, &QPushButton::clicked, this, &TrainingScreen::enterCalibrating);
       m_guideBottom->addWidget(makeBottomBar(b)); }
 
-    // 2 — Stop + Start Scoring
     { auto* pg = new QWidget;
       auto* l  = new QHBoxLayout(pg);
       l->setContentsMargins(PanelPadH, ItemGap, PanelPadH, PanelPadV);
@@ -208,33 +214,28 @@ QWidget* TrainingScreen::buildScoringPanel() {
     vb->setContentsMargins(0, 0, 0, 0);
     vb->setSpacing(0);
 
-    vb->addWidget(makeTopBar(true, this, {}, [this] {
-        QPixmap px = grab();
-        QString path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)
-                       + "/session_"
-                       + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss")
-                       + ".png";
-        px.save(path);
-        SnackBar::show(window(), "Screenshot saved: " + path, SnackBar::Success);
-    }));
+    vb->addWidget(makeStatusBar(panel));
 
-    // Grid with inner margin
     auto* gridWrapper = new QWidget(panel);
     gridWrapper->setStyleSheet(AppTheme::transparent());
     auto* gw = new QVBoxLayout(gridWrapper);
-    gw->setContentsMargins(ItemGap, InlineGap, ItemGap, InlineGap);
+    gw->setContentsMargins(PanelPadH, 0, PanelPadH, 0);
     gw->setSpacing(0);
     m_shotGrid = new ShotGridWidget(gridWrapper);
     gw->addWidget(m_shotGrid);
     gridWrapper->setLayout(gw);
     vb->addWidget(gridWrapper, 1);
 
-    // Total score panel
-    auto* scoreBox = new QWidget(panel);
+    auto* scoreWrapper = new QWidget(panel);
+    scoreWrapper->setStyleSheet(AppTheme::transparent());
+    auto* sw = new QVBoxLayout(scoreWrapper);
+    sw->setContentsMargins(PanelPadH, ItemGap, PanelPadH, 0);
+    sw->setSpacing(0);
+    auto* scoreBox = new QWidget(scoreWrapper);
     scoreBox->setAttribute(Qt::WA_StyledBackground, true);
     scoreBox->setStyleSheet(AppTheme::scorePanel());
     auto* sl = new QVBoxLayout(scoreBox);
-    sl->setContentsMargins(ContentH, CardPadV, ContentH, CardPadV);
+    sl->setContentsMargins(CardPadH, CardPadV, CardPadH, CardPadV);
     sl->setSpacing(RowPad);
     auto* scoreLbl = new QLabel("TOTAL SCORE", scoreBox);
     scoreLbl->setStyleSheet(AppTheme::summaryRowLabel());
@@ -243,9 +244,10 @@ QWidget* TrainingScreen::buildScoringPanel() {
     m_totalScore->setStyleSheet(AppTheme::scoreValue());
     sl->addWidget(m_totalScore);
     scoreBox->setLayout(sl);
-    vb->addWidget(scoreBox);
+    sw->addWidget(scoreBox);
+    scoreWrapper->setLayout(sw);
+    vb->addWidget(scoreWrapper);
 
-    // Pause + End row
     auto* bar = new QWidget(panel);
     bar->setStyleSheet(AppTheme::transparent());
     auto* bl = new QHBoxLayout(bar);
@@ -292,6 +294,12 @@ void TrainingScreen::enterScoring() {
     m_currentMode = MODE_SCORING;
     m_phase       = Scoring;
     m_rightStack->setCurrentIndex(1);
+}
+
+void TrainingScreen::cancelSession() {
+    m_tickTimer->stop();
+    cleanup_system();
+    emit backRequested();
 }
 
 void TrainingScreen::stopAndExit() {

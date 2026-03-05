@@ -5,6 +5,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QTimer>
 #include "core/SessionState.h"
 #include "core/DataModels.h"
 #include "core/BluetoothManager.h"
@@ -12,15 +13,6 @@
 #include "ButtonGrid.h"
 #include "BluetoothPanel.h"
 
-/**
- * @brief Main session-configuration console (Screen 1).
- *
- * Left side: BluetoothPanel.
- * Right side: scrollable step-by-step selection (category → caliber →
- *             profile → distance → drill) driven by SessionState.
- *
- * Emits nextRequested() when the user clicks "Next: Review Session".
- */
 class ConsoleWidget : public QWidget {
     Q_OBJECT
 public:
@@ -40,6 +32,7 @@ private:
     void renderDistances();
     void renderDrills();
     void updateNextButton();
+    void scrollToWidget(QWidget* w);
 
     SessionState*     m_state;
     BluetoothManager* m_btManager;

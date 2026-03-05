@@ -30,7 +30,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     buildHeader(consoleContainer, containerLayout);
 
-    // ── Screen stack ──────────────────────────────────────────────────────
     m_stack = new QStackedWidget(consoleContainer);
 
     m_consoleWidget       = new ConsoleWidget(m_state, m_btManager, m_stack);
@@ -49,7 +48,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     centralWidget->setLayout(rootLayout);
     setCentralWidget(centralWidget);
 
-    // ── Navigation wiring ─────────────────────────────────────────────────
+    // ── Navigation ────────────────────────────────────────────────────────
     connect(m_consoleWidget, &ConsoleWidget::nextRequested,
             this, &MainWindow::showReview);
 
@@ -58,6 +57,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_reviewScreen, &ReviewScreen::confirmRequested,
             this, &MainWindow::showActiveSession);
 
+    connect(m_trainingScreen, &TrainingScreen::backRequested,
+            this, &MainWindow::showReview);
     connect(m_trainingScreen, &TrainingScreen::sessionEnded,
             this, &MainWindow::showSessionReview);
 
@@ -65,6 +66,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             this, &MainWindow::showConsole);
     connect(m_sessionReviewScreen, &SessionReviewScreen::discardRequested,
             this, &MainWindow::showConsole);
+
+    // ── Global disconnect guard ───────────────────────────────────────────
+    // TrainingScreen handles its own disconnect when visible.
+    // For every other screen except SessionReviewScreen → go to console.
+    auto onDisconnect = [this](bool connected) {
+        if (connected) return;
+        QWidget* current = m_stack->currentWidget();
+        if (current == m_trainingScreen)      return;
+        if (current == m_sessionReviewScreen) return;
+        if (current == m_consoleWidget)       return;
+        showConsole();
+    };
+    connect(m_state, &SessionState::bluetoothConnectionChanged, this, onDisconnect);
+    connect(m_state, &SessionState::cameraConnectionChanged,   this, onDisconnect);
 }
 
 void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
@@ -82,7 +97,6 @@ void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
     auto* titleLayout = new QVBoxLayout(titleBlock);
     titleLayout->setContentsMargins(0, 0, 0, 0);
     titleLayout->setSpacing(RowPad);
-
     auto* appTitle = new QLabel("PULSESTATION \u00B7 LANE CONSOLE", titleBlock);
     appTitle->setStyleSheet(AppTheme::headerAppTitle());
     auto* appSubtitle = new QLabel(
@@ -99,9 +113,8 @@ void MainWindow::buildHeader(QWidget* parent, QLayout* parentLayout) {
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(RowPad);
     rightLayout->setAlignment(Qt::AlignRight);
-
     auto* laneLabel = new QLabel(
-        "Lane <strong style='color: rgb(255,182,73);'>7</strong>", rightInfo);
+        QString("Lane <strong style='color: %1;'>7</strong>").arg(AppTheme::rgb(AppColors::Primary())), rightInfo);
     laneLabel->setStyleSheet(AppTheme::laneLabel());
     laneLabel->setAlignment(Qt::AlignRight);
     auto* rangeLabel = new QLabel("Indoor Range \u00B7 25 yards Max", rightInfo);

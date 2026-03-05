@@ -33,16 +33,13 @@ void ConsoleWidget::buildUI() {
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // ── Left: Bluetooth panel (fixed width from token) ────────────────────
     m_bluetoothPanel = new BluetoothPanel(m_btManager, this);
-    // Minimum width only — sidebar can grow wider on larger windows.
     m_bluetoothPanel->setMinimumWidth(SidebarMinW);
     m_bluetoothPanel->setStyleSheet(AppTheme::sidePanel());
 
     connect(m_bluetoothPanel, &BluetoothPanel::connectionChanged,
             [this](bool connected) { m_state->setBluetoothConnected(connected); });
 
-    // ── Right: scrollable setup steps ────────────────────────────────────
     m_rightScroll = new QScrollArea(this);
     m_rightScroll->setWidgetResizable(true);
     m_rightScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -56,7 +53,6 @@ void ConsoleWidget::buildUI() {
     m_stepFlow = new StepFlow(rightPanel);
     rightLayout->addWidget(m_stepFlow);
 
-    // Helper: section block = title row (with optional badge) + ButtonGrid
     auto addStepBlock = [&](const QString& title,
                              const QString& badgeInitial,
                              QWidget*&     outBlock,
@@ -95,7 +91,6 @@ void ConsoleWidget::buildUI() {
         rightLayout->addWidget(outBlock);
     };
 
-    // ── Step 1: Category (custom title row — has hint on right) ──────────
     auto* categoryBlock = new QWidget(rightPanel);
     categoryBlock->setStyleSheet(AppTheme::transparent());
     auto* categoryLayout = new QVBoxLayout(categoryBlock);
@@ -108,9 +103,8 @@ void ConsoleWidget::buildUI() {
     catTitleLayout->setContentsMargins(0, RowPad, 0, RowPad);
     catTitleLayout->setSpacing(InlineGap);
 
-    auto* catTitle = new QLabel("Step 1 \u00B7 Category", categoryBlock);   // ·
+    auto* catTitle = new QLabel("Step 1 \u00B7 Category", categoryBlock);
     catTitle->setStyleSheet(AppTheme::sectionTitle());
-
     auto* catHint = new QLabel("Platform type", categoryBlock);
     catHint->setStyleSheet(AppTheme::sectionHint());
     catHint->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -126,13 +120,11 @@ void ConsoleWidget::buildUI() {
     categoryBlock->setLayout(categoryLayout);
     rightLayout->addWidget(categoryBlock);
 
-    // ── Steps 2–5 ─────────────────────────────────────────────────────────
     addStepBlock("Step 2 \u00B7 Caliber",  "\u2713 Category", m_caliberBlock,  m_caliberGrid,  m_badgeCategory);
     addStepBlock("Step 3 \u00B7 Profile",  "\u2713 Caliber",  m_profileBlock,  m_profileGrid,  m_badgeCaliber);
     addStepBlock("Step 4 \u00B7 Distance", "\u2713 Profile",  m_distanceBlock, m_distanceGrid, m_badgeProfile);
     addStepBlock("Step 5 \u00B7 Drill",    "\u2713 Distance", m_drillBlock,    m_drillGrid,    m_badgeDistance);
 
-    // ── Action buttons ────────────────────────────────────────────────────
     m_actionBlock = new QWidget(rightPanel);
     m_actionBlock->setStyleSheet(AppTheme::transparent());
     auto* actionLayout = new QHBoxLayout(m_actionBlock);
@@ -163,6 +155,12 @@ void ConsoleWidget::buildUI() {
     setLayout(mainLayout);
 }
 
+void ConsoleWidget::scrollToWidget(QWidget* w) {
+    QTimer::singleShot(50, this, [this, w]() {
+        m_rightScroll->ensureWidgetVisible(w);
+    });
+}
+
 void ConsoleWidget::renderAll() {
     m_stepFlow->setCurrentStep(m_state->currentStep());
     renderCategories();
@@ -191,6 +189,7 @@ void ConsoleWidget::renderCalibers() {
                                   "Common for " + cat.label.toLower() + " training",
                                   cal.id);
     m_caliberGrid->setSelectedId(m_state->caliberId());
+    if (m_state->caliberId().isEmpty()) scrollToWidget(m_caliberBlock);
 }
 
 void ConsoleWidget::renderProfiles() {
@@ -202,6 +201,7 @@ void ConsoleWidget::renderProfiles() {
     for (const Profile& prof : cal.profiles)
         m_profileGrid->addButton(prof.label, prof.desc, prof.id);
     m_profileGrid->setSelectedId(m_state->profileId());
+    if (m_state->profileId().isEmpty()) scrollToWidget(m_profileBlock);
 }
 
 void ConsoleWidget::renderDistances() {
@@ -219,6 +219,7 @@ void ConsoleWidget::renderDistances() {
         m_distanceGrid->addButton(QString("%1 Yards").arg(dist), "Set Carrier",
                                    QString::number(dist));
     m_distanceGrid->setSelectedId(QString::number(m_state->distance()));
+    if (m_state->distance() == -1) scrollToWidget(m_distanceBlock);
 }
 
 void ConsoleWidget::renderDrills() {
@@ -229,10 +230,12 @@ void ConsoleWidget::renderDrills() {
     for (const Drill& drl : DataModels::getDrills())
         m_drillGrid->addButton(drl.label, drl.desc, drl.id);
     m_drillGrid->setSelectedId(m_state->drillId());
+    if (m_state->drillId().isEmpty()) scrollToWidget(m_drillBlock);
 }
 
 void ConsoleWidget::updateNextButton() {
     if (!m_state->isComplete()) { m_actionBlock->hide(); return; }
     m_actionBlock->show();
     m_nextBtn->setEnabled(m_state->canProceed());
+    scrollToWidget(m_actionBlock);
 }
