@@ -1,5 +1,17 @@
+// src/core/BluetoothManager.cpp
 #include "BluetoothManager.h"
 #include <QTimer>
+
+// ── GMSync BLE protocol constants ─────────────────────────────────────────────
+const QString BluetoothManager::GmsyncServiceUuid =
+    QStringLiteral("0000b3a0-0000-1000-8000-00805f9b34fb");
+
+const QString BluetoothManager::GmsyncNotifyCharUuid =
+    QStringLiteral("0000b3a1-0000-1000-8000-00805f9b34fb");
+
+// Shot notification packet: 55 AA 06 00
+const QByteArray BluetoothManager::ShotPacket =
+    QByteArray::fromHex("55AA0600");
 
 // ── Construction / Destruction ────────────────────────────────────────────────
 
@@ -10,7 +22,6 @@ BluetoothManager::BluetoothManager(QObject* parent)
 
     m_localDevice = new QBluetoothLocalDevice(this);
 
-    // Listen for adapter power changes via D-Bus
     QDBusConnection::systemBus().connect(
         "org.bluez", "/org/bluez/hci0",
         "org.freedesktop.DBus.Properties", "PropertiesChanged",
@@ -148,6 +159,11 @@ void BluetoothManager::onScanError(QBluetoothDeviceDiscoveryAgent::Error /*error
 void BluetoothManager::onControllerConnected() {
     m_isConnected = true;
     emit connected(m_connectedDeviceName);
+
+    // Kick off service discovery to find the GMSync shot-notification service
+    connect(m_controller, &QLowEnergyController::serviceDiscovered,
+            this,          &BluetoothManager::onServiceDiscovered);
+    m_controller->discoverServices();
 }
 
 void BluetoothManager::onControllerDisconnected() {
@@ -169,9 +185,60 @@ void BluetoothManager::onControllerError(QLowEnergyController::Error /*error*/) 
     QTimer::singleShot(500, this, [this]() { restartScanning(); });
 }
 
+// ── GMSync service discovery ──────────────────────────────────────────────────
+
+void BluetoothManager::onServiceDiscovered(const QBluetoothUuid& uuid) {
+    if (uuid != QBluetoothUuid(GmsyncServiceUuid)) return;
+
+    if (m_gmsyncService) {
+        m_gmsyncService->deleteLater();
+        m_gmsyncService = nullptr;
+    }
+
+    m_gmsyncService = m_controller->createServiceObject(uuid, this);
+    if (!m_gmsyncService) return;
+
+    connect(m_gmsyncService, &QLowEnergyService::stateChanged,
+            this,             &BluetoothManager::onGmsyncServiceStateChanged);
+    connect(m_gmsyncService, &QLowEnergyService::characteristicChanged,
+            this,             &BluetoothManager::onGmsyncCharacteristicChanged);
+
+    m_gmsyncService->discoverDetails();
+}
+
+void BluetoothManager::onGmsyncServiceStateChanged(QLowEnergyService::ServiceState state) {
+    if (state != QLowEnergyService::ServiceDiscovered) return;
+
+    const QLowEnergyCharacteristic notifyChar =
+        m_gmsyncService->characteristic(QBluetoothUuid(GmsyncNotifyCharUuid));
+    if (!notifyChar.isValid()) return;
+
+    // Enable client notifications by writing 0x0100 to the CCCD descriptor
+    const QLowEnergyDescriptor cccd = notifyChar.descriptor(
+        QBluetoothUuid::ClientCharacteristicConfiguration);
+    if (cccd.isValid())
+        m_gmsyncService->writeDescriptor(cccd, QByteArray::fromHex("0100"));
+}
+
+void BluetoothManager::onGmsyncCharacteristicChanged(
+    const QLowEnergyCharacteristic& ch, const QByteArray& data)
+{
+    if (ch.uuid() != QBluetoothUuid(GmsyncNotifyCharUuid)) return;
+
+    if (data.startsWith(ShotPacket))
+    {
+        emit shotSignalReceived();
+    }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 void BluetoothManager::teardownController() {
+    // Service must be cleaned up before the controller that owns it
+    if (m_gmsyncService) {
+        m_gmsyncService->deleteLater();
+        m_gmsyncService = nullptr;
+    }
     if (!m_controller) return;
     m_controller->disconnect();
     m_controller->deleteLater();
