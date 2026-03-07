@@ -39,6 +39,9 @@ private:
     void cancelSession();
     void onTick();
     void onShotFinalized(const ShotRecord& rec);
+    void doEndSession();
+
+    QMetaObject::Connection m_drainConn;
 
     SessionState*     m_state;
     BluetoothManager* m_btManager;

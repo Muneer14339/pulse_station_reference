@@ -36,11 +36,13 @@ void TrainingScreen::beginSession() {
 
     // Fresh correlator each session — auto-disconnects previous via deleteLater
     if (m_correlator) m_correlator->deleteLater();
-    m_correlator = new ShotCorrelator(1000, this);
+    m_correlator = new ShotCorrelator(this);
     connect(m_btManager,   &BluetoothManager::shotSignalReceived,
             m_correlator,  &ShotCorrelator::onBLEShot);
     connect(m_correlator,  &ShotCorrelator::shotFinalized,
             this,          &TrainingScreen::onShotFinalized);
+    connect(m_correlator, &ShotCorrelator::shotPending,
+        m_shotGrid,   &ShotGridWidget::setPendingShot);
 
     init_system(m_state->cameraIndex(), 600);
     m_tickTimer->start();
@@ -315,7 +317,15 @@ void TrainingScreen::cancelSession() {
 
 void TrainingScreen::stopAndExit() {
     m_tickTimer->stop();
-    if (m_correlator) m_correlator->reset();   // discard any pending BLE shot
+    if (!m_correlator) { doEndSession(); return; }
+    m_drainConn = connect(m_correlator, &ShotCorrelator::drained,
+                          this, &TrainingScreen::doEndSession);
+    m_correlator->beginDrain();
+}
+
+void TrainingScreen::doEndSession() {
+    disconnect(m_drainConn);
+    if (m_correlator) m_correlator->reset();
     cleanup_system();
 
     SessionParameters params;
@@ -361,7 +371,7 @@ void TrainingScreen::onTick() {
 // ── New slot — handles finalized shots from correlator ────────────────────────
 void TrainingScreen::onShotFinalized(const ShotRecord& rec) {
     m_shotRecords.append(rec);
-    m_shotGrid->addShot(rec);
+    m_shotGrid->finalizePendingRow(rec);   // ← was addShot(rec)
     int total = 0;
     for (const auto& r : m_shotRecords) total += r.score;
     m_totalScore->setText(QString::number(total));

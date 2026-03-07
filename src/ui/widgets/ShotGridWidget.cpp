@@ -9,6 +9,7 @@
 
 // Column count — used to calculate divider positions
 static constexpr int COL_COUNT = 4;
+static constexpr auto kHourglass = "\u23F3";  // ⏳
 
 ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     setAttribute(Qt::WA_StyledBackground, true);
@@ -92,13 +93,22 @@ QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
         ? QStringLiteral("--")
         : QString::number(s.splitTime, 'f', 2) + "\"";
 
-    const QStringList cells = { QString::number(s.number),
-                                 QString::number(s.score),
-                                 splitStr,
-                                 s.direction.isEmpty() ? "—" : s.direction };
-    for (const QString& txt : cells) {
-        auto* l = new QLabel(txt, row);
-        l->setStyleSheet(AppTheme::summaryRowValue());
+    const QStringList texts = {
+        QString::number(s.number),
+        QString::number(s.score),
+        splitStr,
+        s.direction.isEmpty() ? QStringLiteral("\u2014") : s.direction
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        auto* l = new QLabel(row);
+        if (i == 3 && s.missed) {
+            l->setText(QStringLiteral("\u25CF"));        // ● red dot
+            l->setStyleSheet(AppTheme::gridMissedCell());
+        } else {
+            l->setText(texts[i]);
+            l->setStyleSheet(AppTheme::summaryRowValue());
+        }
         l->setAlignment(Qt::AlignCenter);
         l->setContentsMargins(0, 12, 0, 12);
         rl->addWidget(l, 1);
@@ -106,6 +116,46 @@ QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
     row->setLayout(rl);
     return row;
 }
+
+QWidget* ShotGridWidget::buildPendingRow(int shotNumber) {
+    auto* row = new QWidget;
+    row->setStyleSheet(AppTheme::transparent());
+    auto* rl = new QHBoxLayout(row);
+    rl->setContentsMargins(0, 0, 0, 0);
+    rl->setSpacing(0);
+
+    const QStringList texts = { QString::number(shotNumber),
+                                 kHourglass, kHourglass, kHourglass };
+    for (int i = 0; i < 4; ++i) {
+        auto* l = new QLabel(texts[i], row);
+        l->setStyleSheet(i == 0 ? AppTheme::summaryRowValue() : AppTheme::gridPendingCell());
+        l->setAlignment(Qt::AlignCenter);
+        l->setContentsMargins(0, 12, 0, 12);
+        rl->addWidget(l, 1);
+    }
+    row->setLayout(rl);
+    return row;
+}
+
+void ShotGridWidget::setPendingShot(int shotNumber) {
+    if (m_pendingRow) {
+        m_bodyLayout->removeWidget(m_pendingRow);
+        m_pendingRow->deleteLater();
+    }
+    m_pendingRow = buildPendingRow(shotNumber);
+    m_bodyLayout->insertWidget(m_bodyLayout->count() - 1, m_pendingRow);
+}
+
+void ShotGridWidget::finalizePendingRow(const ShotRecord& s) {
+    if (!m_pendingRow) { addShot(s); return; }   // camera-only — no pending row exists
+    const int idx = m_bodyLayout->indexOf(m_pendingRow);
+    m_bodyLayout->removeWidget(m_pendingRow);
+    m_pendingRow->deleteLater();
+    m_pendingRow = nullptr;
+    m_bodyLayout->insertWidget(idx >= 0 ? idx : m_bodyLayout->count() - 1, buildRow(s));
+}
+
+
 
 void ShotGridWidget::addShot(const ShotRecord& s) {
     m_bodyLayout->insertWidget(m_bodyLayout->count() - 1, buildRow(s));
@@ -118,6 +168,7 @@ void ShotGridWidget::populate(const QVector<ShotRecord>& shots) {
 }
 
 void ShotGridWidget::clear() {
+    m_pendingRow = nullptr;   // will be deleted by the loop below
     while (m_bodyLayout->count() > 1) {
         auto* item = m_bodyLayout->takeAt(0);
         if (item->widget()) item->widget()->deleteLater();

@@ -81,4 +81,7 @@ inline const QString& badgeLive() {
     return s;
 }
 
+inline const QString& gridMissedCell()   { static const QString s = wrap("QLabel", textStyle(FontBody, AppColors::Error(),     700)); return s; }
+inline const QString& gridPendingCell()  { static const QString s = wrap("QLabel", textStyle(FontBody, AppColors::TextMuted()       )); return s; }
+
 } // namespace AppTheme

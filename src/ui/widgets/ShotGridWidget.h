@@ -17,6 +17,8 @@ public:
 
     void addShot(const ShotRecord& s);
     void populate(const QVector<ShotRecord>& shots);
+    void setPendingShot(int shotNumber);
+void finalizePendingRow(const ShotRecord& s);
     void clear();
 
 protected:
@@ -25,9 +27,11 @@ protected:
 private:
     QWidget*     buildRow(const ShotRecord& s);
     void         repositionDividers();
+    QWidget* buildPendingRow(int shotNumber);
 
     QWidget*         m_header     = nullptr;
     QScrollArea*     m_scroll     = nullptr;
     QVBoxLayout*     m_bodyLayout = nullptr;
     QList<QWidget*>  m_colDividers;   // 3 overlay lines for 4 columns
+    QWidget* m_pendingRow = nullptr;
 };

@@ -10,6 +10,7 @@ struct ShotRecord {
     int     number    = 0;
     int     score     = 0;
     double  splitTime = -1.0;   // -1 = first shot (no split)
+    bool    missed    = false;
     QString direction;          // "center", "high-left", etc. — optional
     QString imagePath;          // optional screenshot path
 };

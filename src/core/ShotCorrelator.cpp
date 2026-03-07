@@ -1,40 +1,52 @@
 #include "ShotCorrelator.h"
 #include <QDateTime>
 
-ShotCorrelator::ShotCorrelator(int windowMs, QObject* parent)
-    : QObject(parent), m_windowMs(windowMs)
-{
+ShotCorrelator::ShotCorrelator(QObject* parent) : QObject(parent) {
     m_windowTimer = new QTimer(this);
     m_windowTimer->setSingleShot(true);
     connect(m_windowTimer, &QTimer::timeout, this, &ShotCorrelator::expirePending);
+
+    m_debounceTimer = new QTimer(this);
+    m_debounceTimer->setSingleShot(true);
+    connect(m_debounceTimer, &QTimer::timeout, this, [this]{ m_debouncing = false; });
 }
 
 void ShotCorrelator::reset() {
     m_windowTimer->stop();
+    m_debounceTimer->stop();
     m_hasPending     = false;
+    m_debouncing     = false;
+    m_draining       = false;
     m_pendingBLETime = -1;
     m_shotNumber     = 0;
     m_prevTime       = -1;
 }
 
 void ShotCorrelator::onBLEShot() {
-    // Previous BLE shot still pending (rapid fire / camera miss) — expire it first
+    if (m_debouncing) return;
+    m_debouncing = true;
+    m_debounceTimer->start(BleDebounceMs);
+
+    // Previous pending never got camera data → expire as missed before opening new window
     if (m_hasPending) {
         m_windowTimer->stop();
         expirePending();
     }
+
     m_hasPending     = true;
     m_pendingBLETime = QDateTime::currentMSecsSinceEpoch();
-    m_windowTimer->start(m_windowMs);
+    emit shotPending(m_shotNumber + 1);   // preview number (not yet incremented)
+
+    if (CorrelationWindowMs > 0)
+        m_windowTimer->start(CorrelationWindowMs);
 }
 
 void ShotCorrelator::onCameraShot(int score, int direction, const QString& imagePath) {
     if (m_hasPending) {
-        // Normal case: BLE arrived first, camera confirmed the shot
         m_windowTimer->stop();
         flushPending(score, direction, imagePath);
     } else {
-        // Camera-only: no BLE signal was pending
+        // Camera-only shot (no BLE pending)
         const qint64 now = QDateTime::currentMSecsSinceEpoch();
         ShotRecord rec;
         rec.number    = ++m_shotNumber;
@@ -45,6 +57,16 @@ void ShotCorrelator::onCameraShot(int score, int direction, const QString& image
         m_prevTime    = now;
         emit shotFinalized(rec);
     }
+}
+
+void ShotCorrelator::beginDrain() {
+    if (!m_hasPending) { emit drained(); return; }
+
+    m_draining = true;
+    m_windowTimer->stop();
+    const qint64 elapsed   = QDateTime::currentMSecsSinceEpoch() - m_pendingBLETime;
+    const int    remaining = static_cast<int>(qMax(0LL, (qint64)SessionEndWaitMs - elapsed));
+    m_windowTimer->start(remaining);
 }
 
 void ShotCorrelator::flushPending(int score, int direction, const QString& imagePath) {
@@ -58,17 +80,20 @@ void ShotCorrelator::flushPending(int score, int direction, const QString& image
     m_hasPending     = false;
     m_pendingBLETime = -1;
     emit shotFinalized(rec);
+
+    if (m_draining) { m_draining = false; emit drained(); }
 }
 
 void ShotCorrelator::expirePending() {
-    // BLE fired but camera never responded within the correlation window
     ShotRecord rec;
     rec.number    = ++m_shotNumber;
     rec.score     = 0;
+    rec.missed    = true;
     rec.splitTime = (m_prevTime < 0) ? -1.0 : (m_pendingBLETime - m_prevTime) / 1000.0;
-    // direction stays empty — missed shot has no placement data
     m_prevTime       = m_pendingBLETime;
     m_hasPending     = false;
     m_pendingBLETime = -1;
     emit shotFinalized(rec);
+
+    if (m_draining) { m_draining = false; emit drained(); }
 }
