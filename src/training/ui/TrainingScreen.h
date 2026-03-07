@@ -8,6 +8,8 @@
 #include <QScrollArea>
 #include <QDateTime>
 #include "core/SessionState.h"
+#include "core/BluetoothManager.h"
+#include "core/ShotCorrelator.h"
 #include "training/engine/dart_system.h"
 #include "training/data/ReviewDataTypes.h"
 #include "ui/widgets/ShotGridWidget.h"
@@ -15,7 +17,9 @@
 class TrainingScreen : public QWidget {
     Q_OBJECT
 public:
-    explicit TrainingScreen(SessionState* state, QWidget* parent = nullptr);
+    explicit TrainingScreen(SessionState*     state,
+                            BluetoothManager* btManager,
+                            QWidget*          parent = nullptr);
     void beginSession();
 
 signals:
@@ -34,8 +38,12 @@ private:
     void stopAndExit();
     void cancelSession();
     void onTick();
+    void onShotFinalized(const ShotRecord& rec);
 
-    SessionState*   m_state;
+    SessionState*     m_state;
+    BluetoothManager* m_btManager;
+    ShotCorrelator*   m_correlator  = nullptr;
+
     QLabel*         m_cameraView;
     QStackedWidget* m_rightStack;
     QStackedWidget* m_guideBottom;

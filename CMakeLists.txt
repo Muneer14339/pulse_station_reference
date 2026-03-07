@@ -22,6 +22,7 @@ add_executable(${PROJECT_NAME}
     src/core/SessionState.cpp
     src/core/DataModels.cpp
     src/core/BluetoothManager.cpp
+    src/core/ShotCorrelator.cpp
 
     # ── Training Data ─────────────────────────────────────────────────────
     src/training/data/ReviewDataTypes.cpp

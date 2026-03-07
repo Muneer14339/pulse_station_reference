@@ -34,7 +34,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     m_consoleWidget       = new ConsoleWidget(m_state, m_btManager, m_stack);
     m_reviewScreen        = new ReviewScreen(m_state, m_stack);
-    m_trainingScreen      = new TrainingScreen(m_state, m_stack);
+    m_trainingScreen = new TrainingScreen(m_state, m_btManager, m_stack);
     m_sessionReviewScreen = new SessionReviewScreen(m_stack);
 
     m_stack->addWidget(m_consoleWidget);        // 0

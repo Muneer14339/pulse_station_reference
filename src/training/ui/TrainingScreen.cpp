@@ -4,8 +4,8 @@
 #include "common/SnackBar.h"
 #include <QHBoxLayout>
 
-TrainingScreen::TrainingScreen(SessionState* state, QWidget* parent)
-    : QWidget(parent), m_state(state)
+TrainingScreen::TrainingScreen(SessionState* state, BluetoothManager* btManager, QWidget* parent)
+    : QWidget(parent), m_state(state), m_btManager(btManager)
 {
     buildUI();
 
@@ -33,9 +33,19 @@ void TrainingScreen::beginSession() {
     m_rightStack->setCurrentIndex(0);
     m_guideBottom->setCurrentIndex(0);
     m_step4->hide();
+
+    // Fresh correlator each session — auto-disconnects previous via deleteLater
+    if (m_correlator) m_correlator->deleteLater();
+    m_correlator = new ShotCorrelator(1000, this);
+    connect(m_btManager,   &BluetoothManager::shotSignalReceived,
+            m_correlator,  &ShotCorrelator::onBLEShot);
+    connect(m_correlator,  &ShotCorrelator::shotFinalized,
+            this,          &TrainingScreen::onShotFinalized);
+
     init_system(m_state->cameraIndex(), 600);
     m_tickTimer->start();
 }
+
 
 static QWidget* makeStatusBar(QWidget* parent) {
     using namespace AppTheme;
@@ -298,12 +308,14 @@ void TrainingScreen::enterScoring() {
 
 void TrainingScreen::cancelSession() {
     m_tickTimer->stop();
+    if (m_correlator) m_correlator->reset();
     cleanup_system();
     emit backRequested();
 }
 
 void TrainingScreen::stopAndExit() {
     m_tickTimer->stop();
+    if (m_correlator) m_correlator->reset();   // discard any pending BLE shot
     cleanup_system();
 
     SessionParameters params;
@@ -339,14 +351,18 @@ void TrainingScreen::onTick() {
     }
 
     if (m_phase == Scoring && result.has_new_shot) {
-        ShotRecord rec;
-        rec.number    = result.shot.shot_number;
-        rec.score     = result.shot.score;
-        rec.splitTime = -1.0;
-        rec.imagePath = QString::fromStdString(get_session_folder())
-                        + "/shot_" + QString::number(result.shot.shot_number) + ".png";
-        m_shotRecords.append(rec);
-        m_shotGrid->addShot(rec);
-        m_totalScore->setText(QString::number(result.shot.total_score));
+        const QString imgPath = QString::fromStdString(get_session_folder())
+                               + "/shot_" + QString::number(result.shot.shot_number) + ".png";
+        m_correlator->onCameraShot(result.shot.score, result.shot.direction, imgPath);
     }
+}
+
+
+// ── New slot — handles finalized shots from correlator ────────────────────────
+void TrainingScreen::onShotFinalized(const ShotRecord& rec) {
+    m_shotRecords.append(rec);
+    m_shotGrid->addShot(rec);
+    int total = 0;
+    for (const auto& r : m_shotRecords) total += r.score;
+    m_totalScore->setText(QString::number(total));
 }
