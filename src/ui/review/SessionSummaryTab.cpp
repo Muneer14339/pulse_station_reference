@@ -23,7 +23,7 @@ SessionSummaryTab::SessionSummaryTab(QWidget* parent) : QWidget(parent) {
 
 void SessionSummaryTab::populate(const SessionResult& r) {
     m_performancePanel->clearRows();
-    m_performancePanel->addRow("Scheduled Shots", QString::number(r.params.shotsScheduled));
+    m_performancePanel->addRow("Scheduled Shots", r.scheduledLabel());
     m_performancePanel->addRow("Shots Fired",     QString::number(r.shotsFired()));
     m_performancePanel->addRow("Shots Missing",   QString::number(r.shotsMissing()));
     m_performancePanel->addRow("Total Score",     QString::number(r.totalScore()), true);

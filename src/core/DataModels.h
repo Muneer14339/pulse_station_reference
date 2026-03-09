@@ -35,6 +35,7 @@ struct Drill {
     QString id;
     QString label;
     QString desc;
+    int     shotLimit = 0;   // 0 = unlimited; >0 = auto-end after N shots
 };
 
 struct RecentSession {

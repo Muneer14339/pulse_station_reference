@@ -27,6 +27,9 @@ void TrainingScreen::beginSession() {
     m_camReady    = false;
     m_currentMode = MODE_STREAMING;
     m_shotRecords.clear();
+    m_shotLimit = 0;
+    for (const Drill& d : DataModels::getDrills())
+      if (d.id == m_state->drillId()) { m_shotLimit = d.shotLimit; break; }
     m_sessionStart = QDateTime::currentDateTime();
     m_shotGrid->clear();
     m_totalScore->setText("0");
@@ -334,7 +337,7 @@ void TrainingScreen::doEndSession() {
     params.firearm        = "Pistol, Beretta";
     params.weaponType     = m_state->categoryId();
     params.distance       = m_state->distance();
-    params.shotsScheduled = qMax(10, m_shotRecords.size());
+    params.shotsScheduled = m_shotLimit;
     params.drillId        = m_state->drillId();
 
     emit sessionEnded(SessionResult::buildMockResult(m_shotRecords, params));
@@ -371,8 +374,11 @@ void TrainingScreen::onTick() {
 // ── New slot — handles finalized shots from correlator ────────────────────────
 void TrainingScreen::onShotFinalized(const ShotRecord& rec) {
     m_shotRecords.append(rec);
-    m_shotGrid->finalizePendingRow(rec);   // ← was addShot(rec)
+    m_shotGrid->finalizePendingRow(rec);
     int total = 0;
     for (const auto& r : m_shotRecords) total += r.score;
     m_totalScore->setText(QString::number(total));
+
+    if (m_shotLimit > 0 && m_shotRecords.size() >= m_shotLimit)
+        stopAndExit();   // ← auto-end; user can still end early via button
 }

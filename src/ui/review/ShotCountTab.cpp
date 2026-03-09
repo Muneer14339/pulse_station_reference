@@ -58,7 +58,7 @@ void ShotCountTab::populate(const SessionResult& r) {
     m_paramsPanel->addRow("Drill",       r.params.drillId.isEmpty()    ? "\u2014" : r.params.drillId);
 
     m_statsPanel->clearRows();
-    m_statsPanel->addRow("Scheduled Shots", QString::number(r.params.shotsScheduled));
+    m_statsPanel->addRow("Scheduled Shots", r.scheduledLabel());
     m_statsPanel->addRow("Fired Shots",     QString::number(r.shotsFired()));
     m_statsPanel->addRow("Missing Shots",   QString::number(r.shotsMissing()));
     m_statsPanel->addRow("Total Score",     QString::number(r.totalScore()), true);

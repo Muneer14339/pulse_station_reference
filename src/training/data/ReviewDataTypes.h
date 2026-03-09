@@ -53,7 +53,10 @@ struct SessionResult {
     // Computed helpers
     int  totalScore()   const;
     int  shotsFired()   const { return shots.size(); }
-    int  shotsMissing() const { return qMax(0, params.shotsScheduled - shotsFired()); }
+    int  shotsMissing()  const {
+    int n = 0;
+    for (const auto& s : shots) if (s.missed) ++n;
+    return n; }
     double avgScore()   const;
     double bestSplit()  const;
     double avgSplit()   const;
@@ -61,4 +64,10 @@ struct SessionResult {
     /** Build a result from live shot data + params; ShoQ data is mocked. */
     static SessionResult buildMockResult(const QVector<ShotRecord>& shots,
                                          const SessionParameters&   params);
+
+    bool    isUnlimited()     const { return params.shotsScheduled == 0; }
+    QString scheduledLabel()  const {
+    return isUnlimited() ? QStringLiteral("Unlimited")
+                         : QString::number(params.shotsScheduled);
+    }                                     
 };

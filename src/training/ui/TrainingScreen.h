@@ -13,6 +13,7 @@
 #include "training/engine/dart_system.h"
 #include "training/data/ReviewDataTypes.h"
 #include "ui/widgets/ShotGridWidget.h"
+#include "core/DataModels.h"
 
 class TrainingScreen : public QWidget {
     Q_OBJECT
@@ -63,4 +64,6 @@ private:
 
     QVector<ShotRecord> m_shotRecords;
     QDateTime           m_sessionStart;
+
+    int m_shotLimit = 0;
 };
