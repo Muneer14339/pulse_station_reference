@@ -10,7 +10,7 @@ class CameraPanel : public QWidget {
     Q_OBJECT
 public:
     // Change this index to target a different system camera in the future.
-    static constexpr int kAutoConnectIndex = 3;
+    static constexpr int kAutoConnectIndex = 1;
 
     explicit CameraPanel(QWidget* parent = nullptr);
 
