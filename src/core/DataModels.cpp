@@ -86,7 +86,7 @@ QVector<Target> DataModels::getTargets() {
 QVector<Drill> DataModels::getDrills() {
     return {
         {"free_fire",  "Free Fire",  "Untimed scoring & grouping", 0},
-        {"bill_drill", "Bill Drill", "6 shots A-Zone (Fast)",      6}
+        {"bill_drill", "Bill Drill", "10 shots A-Zone (Fast)",      10}
     };
 }
 
