@@ -2,6 +2,7 @@
 #include "training/data/ScoringGuideData.h"
 #include "common/AppTheme.h"
 #include "common/SnackBar.h"
+#include "common/AudioFeedback.h"
 #include <QHBoxLayout>
 
 TrainingScreen::TrainingScreen(SessionState* state, BluetoothManager* btManager, QWidget* parent)
@@ -364,6 +365,7 @@ void TrainingScreen::onTick() {
     }
 
     if (m_phase == Scoring && result.has_new_shot) {
+        AudioFeedback::playBeep();
         const QString imgPath = QString::fromStdString(get_session_folder())
                                + "/shot_" + QString::number(result.shot.shot_number) + ".png";
         m_correlator->onCameraShot(result.shot.score, result.shot.direction, imgPath);

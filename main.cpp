@@ -1,9 +1,11 @@
 #include <QApplication>
 #include "ui/MainWindow.h"
 #include "common/AppTheme.h"
+#include "common/TouchScroll.h" 
 
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
+    installTouchScroll(app);
     app.setStyle("Fusion");
     app.setStyleSheet(AppTheme::globalStyle());
 

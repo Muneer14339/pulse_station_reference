@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
     src/common/PillWidget.cpp
     src/common/SnackBar.cpp
     src/common/ScanPanel.cpp
+    src/common/TouchScroll.cpp
 
     # ── Core ──────────────────────────────────────────────────────────────
     src/core/SessionState.cpp
