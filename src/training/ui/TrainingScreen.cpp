@@ -1,6 +1,7 @@
 #include "TrainingScreen.h"
 #include "training/data/ScoringGuideData.h"
 #include "common/AppTheme.h"
+#include "common/theme/Icons.h"
 #include "common/SnackBar.h"
 #include "common/AudioFeedback.h"
 #include <QHBoxLayout>
@@ -61,11 +62,11 @@ static QWidget* makeStatusBar(QWidget* parent) {
     l->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, ItemGap);
     l->setSpacing(InlineGap);
     l->addStretch();
-    for (const char* txt : {"\u25CF Wi-Fi", "\u2B21  BLE"}) {
+    for (const char* txt : {AppIcons::WiFiLabel, AppIcons::BleLabel}) {
         auto* lbl = new QLabel(txt, bar);
         lbl->setStyleSheet(AppTheme::connectedIcon());
         l->addWidget(lbl);
-        if (txt == std::string("\u25CF Wi-Fi")) l->addSpacing(ItemGap);
+        if (txt == std::string(AppIcons::WiFiLabel)) l->addSpacing(ItemGap);
     }
     bar->setLayout(l);
     return bar;
@@ -80,18 +81,18 @@ static QWidget* makeTopBarWithBack(QWidget* parent, QObject* ctx,
     auto* l = new QHBoxLayout(bar);
     l->setContentsMargins(PanelPadH, PanelPadV, PanelPadH, ItemGap);
     l->setSpacing(InlineGap);
-    auto* btn = new QPushButton("\u2190", bar);
+    auto* btn = new QPushButton(AppIcons::Back, bar);
     btn->setStyleSheet(AppTheme::iconButton());
     btn->setFixedSize(IconBtnSz, IconBtnSz);
     btn->setCursor(Qt::PointingHandCursor);
     QObject::connect(btn, &QPushButton::clicked, ctx, [backAction]{ backAction(); });
     l->addWidget(btn);
     l->addStretch();
-    for (const char* txt : {"\u25CF Wi-Fi", "\u2B21  BLE"}) {
+    for (const char* txt : {AppIcons::WiFiLabel, AppIcons::BleLabel}) {
         auto* lbl = new QLabel(txt, bar);
         lbl->setStyleSheet(AppTheme::connectedIcon());
         l->addWidget(lbl);
-        if (txt == std::string("\u25CF Wi-Fi")) l->addSpacing(ItemGap);
+        if (txt == std::string(AppIcons::WiFiLabel)) l->addSpacing(ItemGap);
     }
     bar->setLayout(l);
     return bar;
@@ -270,12 +271,12 @@ QWidget* TrainingScreen::buildScoringPanel() {
     bl->setContentsMargins(PanelPadH, ItemGap, PanelPadH, PanelPadV);
     bl->setSpacing(InlineGap);
 
-    m_pauseBtn = new QPushButton("\u23F8  Pause", bar);
+    m_pauseBtn = new QPushButton(AppIcons::PauseLabel, bar);
     m_pauseBtn->setStyleSheet(AppTheme::buttonDanger());
     m_pauseBtn->setCursor(Qt::PointingHandCursor);
     connect(m_pauseBtn, &QPushButton::clicked, this, [this]() {
-        if (m_paused) { resume_system(); m_paused = false; m_pauseBtn->setText("\u23F8  Pause"); }
-        else          { pause_system();  m_paused = true;  m_pauseBtn->setText("\u25B6  Resume"); }
+        if (m_paused) { resume_system(); m_paused = false; m_pauseBtn->setText(AppIcons::PauseLabel);  }
+        else          { pause_system();  m_paused = true;  m_pauseBtn->setText(AppIcons::ResumeLabel); }
     });
 
     auto* endBtn = new QPushButton("End Session", bar);
@@ -372,8 +373,6 @@ void TrainingScreen::onTick() {
     }
 }
 
-
-// ── New slot — handles finalized shots from correlator ────────────────────────
 void TrainingScreen::onShotFinalized(const ShotRecord& rec) {
     m_shotRecords.append(rec);
     m_shotGrid->finalizePendingRow(rec);
@@ -382,5 +381,5 @@ void TrainingScreen::onShotFinalized(const ShotRecord& rec) {
     m_totalScore->setText(QString::number(total));
 
     if (m_shotLimit > 0 && m_shotRecords.size() >= m_shotLimit)
-        stopAndExit();   // ← auto-end; user can still end early via button
+        stopAndExit();
 }

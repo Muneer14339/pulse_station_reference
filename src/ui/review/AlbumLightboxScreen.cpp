@@ -1,6 +1,7 @@
 // src/ui/review/AlbumLightboxScreen.cpp
 #include "AlbumLightboxScreen.h"
 #include "common/AppTheme.h"
+#include "common/theme/Icons.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFile>
@@ -9,7 +10,7 @@
 #include <QPinchGesture>
 
 static QPushButton* makeArrowBtn(bool isLeft, QWidget* parent) {
-    auto* btn = new QPushButton(isLeft ? "\u2039" : "\u203A", parent);
+    auto* btn = new QPushButton(isLeft ? AppIcons::PrevArrow : AppIcons::NextArrow, parent);
     btn->setFixedSize(52, 80);
     btn->setStyleSheet(AppTheme::navArrowButton());
     btn->setCursor(Qt::PointingHandCursor);
@@ -82,7 +83,6 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     imgPanel->setLayout(imgVb);
 
     // ── Right: details panel ──────────────────────────────────────────────
-    // Min width only — panel grows with window; no fixed width so text never clips.
     auto* detailPanel = new QWidget(this);
     detailPanel->setMinimumWidth(SidebarMinW - SpaceXXXL);
     detailPanel->setAttribute(Qt::WA_StyledBackground, true);
@@ -107,7 +107,7 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     trl->setSpacing(InlineGap);
     auto* titleLbl = new QLabel("Shot Details", infoBox);
     titleLbl->setStyleSheet(AppTheme::sectionTitle());
-    auto* closeBtn = new QPushButton("\u2715", infoBox);   // ✕
+    auto* closeBtn = new QPushButton(AppIcons::Close, infoBox);
     closeBtn->setStyleSheet(AppTheme::iconButton());
     closeBtn->setFixedSize(IconBtnSz - SpaceXS, IconBtnSz - SpaceXS);
     closeBtn->setCursor(Qt::PointingHandCursor);
@@ -123,8 +123,6 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
     div->setStyleSheet(AppTheme::divider());
     il->addWidget(div);
 
-    // makeRow: label (muted, small) on top; value below with wordWrap.
-    // Vertical layout prevents long session IDs from being clipped by right-alignment.
     auto makeRow = [&](const QString& key) -> QLabel* {
         auto* block = new QWidget(infoBox);
         block->setStyleSheet(AppTheme::transparent());
@@ -133,9 +131,9 @@ AlbumLightboxScreen::AlbumLightboxScreen(QWidget* parent) : QWidget(parent) {
         bl->setSpacing(RowPad);
         auto* k = new QLabel(key, block);
         k->setStyleSheet(AppTheme::labelSecondary());
-        auto* v = new QLabel("\u2014", block);
+        auto* v = new QLabel(AppIcons::NoValue, block);
         v->setStyleSheet(AppTheme::summaryRowValue());
-        v->setWordWrap(true);            // long IDs wrap instead of clip
+        v->setWordWrap(true);
         v->setTextInteractionFlags(Qt::TextSelectableByMouse);
         bl->addWidget(k);
         bl->addWidget(v);
@@ -161,7 +159,7 @@ void AlbumLightboxScreen::open(const QVector<ShotRecord>& shots,
                                 const QString& sessionId, int startIndex)
 {
     m_shots = shots;
-    m_detailSession->setText(sessionId.isEmpty() ? "\u2014" : sessionId);
+    m_detailSession->setText(sessionId.isEmpty() ? AppIcons::NoValue : sessionId);
     loadShot(startIndex);
 }
 
@@ -192,7 +190,7 @@ void AlbumLightboxScreen::applyZoom(double newZoom) {
         m_imageLabel->setPixmap(QPixmap());
         m_imageLabel->setText(m_shots.isEmpty()
             ? "No Image"
-            : QString("Shot #%1 \u2014 No Image").arg(m_shots.value(m_idx).number));
+            : QString("Shot #%1 %2 No Image").arg(m_shots.value(m_idx).number).arg(AppIcons::NoValue));
         m_imageLabel->resize(m_scrollArea->viewport()->size());
         return;
     }

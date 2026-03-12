@@ -1,16 +1,15 @@
 // src/ui/widgets/ShotGridWidget.cpp
 #include "ShotGridWidget.h"
 #include "common/AppTheme.h"
+#include "common/theme/Icons.h"
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QScrollArea>
 #include <QFrame>
 #include <QResizeEvent>
-#include "common/theme/Icons.h" 
 
 // Column count — used to calculate divider positions
 static constexpr int COL_COUNT = 4;
-// static constexpr auto kHourglass = "\u23F3";  // ⏳
 
 ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     setAttribute(Qt::WA_StyledBackground, true);
@@ -56,8 +55,6 @@ ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     setLayout(vb);
 
     // ── Overlay column dividers (3 lines for 4 columns) ──────────────────────
-    // These are placed as children of `this`, raised above header + scroll,
-    // and repositioned in resizeEvent to always span full widget height.
     for (int i = 0; i < COL_COUNT - 1; ++i) {
         auto* div = new QWidget(this);
         div->setAttribute(Qt::WA_StyledBackground, true);
@@ -79,7 +76,7 @@ void ShotGridWidget::repositionDividers() {
     const int colW = w / COL_COUNT;
     for (int i = 0; i < m_colDividers.size(); ++i) {
         const int x = colW * (i + 1);
-        m_colDividers[i]->setGeometry(x, 0, 1, h);  // full height of widget
+        m_colDividers[i]->setGeometry(x, 0, 1, h);
     }
 }
 
@@ -98,13 +95,13 @@ QWidget* ShotGridWidget::buildRow(const ShotRecord& s) {
         QString::number(s.number),
         QString::number(s.score),
         splitStr,
-        s.direction.isEmpty() ? QStringLiteral("\u2014") : s.direction
+        s.direction.isEmpty() ? QString(AppIcons::NoValue) : s.direction
     };
 
     for (int i = 0; i < 4; ++i) {
         auto* l = new QLabel(row);
         if (i == 3 && s.missed) {
-            l->setText(QStringLiteral("\u25CF"));        // ● red dot
+            l->setText(AppIcons::Missed);
             l->setStyleSheet(AppTheme::gridMissedCell());
         } else {
             l->setText(texts[i]);
@@ -124,7 +121,7 @@ QWidget* ShotGridWidget::buildPendingRow(int shotNumber) {
     auto* rl = new QHBoxLayout(row);
     rl->setContentsMargins(0, 0, 0, 0);
     rl->setSpacing(0);
- 
+
     for (int i = 0; i < 4; ++i) {
         if (i == 0) {
             auto* l = new QLabel(QString::number(shotNumber), row);
@@ -133,7 +130,6 @@ QWidget* ShotGridWidget::buildPendingRow(int shotNumber) {
             l->setContentsMargins(0, 12, 0, 12);
             rl->addWidget(l, 1);
         } else {
-            // Wrapper — column stretch sahi rakhe, hourglass centre mein rahe
             auto* cell = new QWidget(row);
             cell->setStyleSheet(AppTheme::transparent());
             auto* cl = new QHBoxLayout(cell);
@@ -143,7 +139,7 @@ QWidget* ShotGridWidget::buildPendingRow(int shotNumber) {
             cl->addWidget(AppIcons::pendingLabel(cell));
             cl->addStretch();
             cell->setLayout(cl);
-            rl->addWidget(cell, 1);   // stretch 1 = equal column width
+            rl->addWidget(cell, 1);
         }
     }
     row->setLayout(rl);
@@ -160,15 +156,13 @@ void ShotGridWidget::setPendingShot(int shotNumber) {
 }
 
 void ShotGridWidget::finalizePendingRow(const ShotRecord& s) {
-    if (!m_pendingRow) { addShot(s); return; }   // camera-only — no pending row exists
+    if (!m_pendingRow) { addShot(s); return; }
     const int idx = m_bodyLayout->indexOf(m_pendingRow);
     m_bodyLayout->removeWidget(m_pendingRow);
     m_pendingRow->deleteLater();
     m_pendingRow = nullptr;
     m_bodyLayout->insertWidget(idx >= 0 ? idx : m_bodyLayout->count() - 1, buildRow(s));
 }
-
-
 
 void ShotGridWidget::addShot(const ShotRecord& s) {
     m_bodyLayout->insertWidget(m_bodyLayout->count() - 1, buildRow(s));
@@ -181,7 +175,7 @@ void ShotGridWidget::populate(const QVector<ShotRecord>& shots) {
 }
 
 void ShotGridWidget::clear() {
-    m_pendingRow = nullptr;   // will be deleted by the loop below
+    m_pendingRow = nullptr;
     while (m_bodyLayout->count() > 1) {
         auto* item = m_bodyLayout->takeAt(0);
         if (item->widget()) item->widget()->deleteLater();
