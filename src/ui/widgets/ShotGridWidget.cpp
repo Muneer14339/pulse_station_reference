@@ -6,10 +6,11 @@
 #include <QScrollArea>
 #include <QFrame>
 #include <QResizeEvent>
+#include "common/theme/Icons.h" 
 
 // Column count — used to calculate divider positions
 static constexpr int COL_COUNT = 4;
-static constexpr auto kHourglass = "\u23F3";  // ⏳
+// static constexpr auto kHourglass = "\u23F3";  // ⏳
 
 ShotGridWidget::ShotGridWidget(QWidget* parent) : QWidget(parent) {
     setAttribute(Qt::WA_StyledBackground, true);
@@ -123,15 +124,27 @@ QWidget* ShotGridWidget::buildPendingRow(int shotNumber) {
     auto* rl = new QHBoxLayout(row);
     rl->setContentsMargins(0, 0, 0, 0);
     rl->setSpacing(0);
-
-    const QStringList texts = { QString::number(shotNumber),
-                                 kHourglass, kHourglass, kHourglass };
+ 
     for (int i = 0; i < 4; ++i) {
-        auto* l = new QLabel(texts[i], row);
-        l->setStyleSheet(i == 0 ? AppTheme::summaryRowValue() : AppTheme::gridPendingCell());
-        l->setAlignment(Qt::AlignCenter);
-        l->setContentsMargins(0, 12, 0, 12);
-        rl->addWidget(l, 1);
+        if (i == 0) {
+            auto* l = new QLabel(QString::number(shotNumber), row);
+            l->setStyleSheet(AppTheme::summaryRowValue());
+            l->setAlignment(Qt::AlignCenter);
+            l->setContentsMargins(0, 12, 0, 12);
+            rl->addWidget(l, 1);
+        } else {
+            // Wrapper — column stretch sahi rakhe, hourglass centre mein rahe
+            auto* cell = new QWidget(row);
+            cell->setStyleSheet(AppTheme::transparent());
+            auto* cl = new QHBoxLayout(cell);
+            cl->setContentsMargins(0, 8, 0, 8);
+            cl->setSpacing(0);
+            cl->addStretch();
+            cl->addWidget(AppIcons::pendingLabel(cell));
+            cl->addStretch();
+            cell->setLayout(cl);
+            rl->addWidget(cell, 1);   // stretch 1 = equal column width
+        }
     }
     row->setLayout(rl);
     return row;

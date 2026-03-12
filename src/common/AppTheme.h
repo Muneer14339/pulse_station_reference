@@ -19,3 +19,4 @@
 #include "theme/Labels.h"
 #include "theme/Buttons.h"
 #include "theme/Containers.h"
+#include "theme/Icons.h"

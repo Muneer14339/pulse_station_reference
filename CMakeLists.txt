@@ -18,6 +18,7 @@ add_executable(${PROJECT_NAME}
     src/common/SnackBar.cpp
     src/common/ScanPanel.cpp
     src/common/TouchScroll.cpp
+    src/ui/widgets/HourglassWidget.cpp
 
     # ── Core ──────────────────────────────────────────────────────────────
     src/core/SessionState.cpp
